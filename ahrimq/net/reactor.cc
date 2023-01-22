@@ -1,42 +1,8 @@
-#include "reactor.h"
+#include "net/reactor.h"
 
 using namespace std::placeholders;  // _1, _2
 
 namespace ahrimq {
-
-IOReadWriteStatus ReadFromFdToBuf(int fd, Buffer& buf) {
-  IOReadWriteStatus status{.n_bytes = 0, .statuscode = kStatusNormal};
-  if (fd == -1) {
-    status.n_bytes = 0;
-    status.statuscode = kStatusError;
-    return status;
-  }
-  size_t total_bytes = 0;
-  char tmpbuf[kNetReadBufSize] = {0};
-  while (true) {
-    ssize_t nbytes = read(fd, tmpbuf, sizeof(tmpbuf));
-    if (nbytes == 0) {
-      /* remote closed */
-      status.statuscode = kStatusClosed;
-      break;
-    } else if (nbytes > 0) {
-      total_bytes += nbytes;
-      buf.Append(tmpbuf, nbytes);
-    } else {  // nbytes == -1
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        status.statuscode = kStatusExhausted;
-        break;
-      } else if (errno == EINTR) {
-        continue;
-      } else {
-        status.statuscode = kStatusError;
-        break;
-      }
-    }
-  }
-  status.n_bytes = total_bytes;
-  return status;
-}
 
 uint64_t Reactor::next_conn_id_ = 1;
 
@@ -45,7 +11,7 @@ Reactor::Reactor(const std::string& ip, uint16_t port, uint32_t num)
   if (num == 0) {
     num_loop_ = std::thread::hardware_concurrency();
   }
-  /* init eventloop */
+  // init eventloop
   if (!InitEventLoops()) {
     std::cerr << "can not init eventloops\n";
     exit(EXIT_FAILURE);
@@ -60,16 +26,19 @@ Reactor::Reactor(const std::string& ip, uint16_t port, uint32_t num)
 }
 
 Reactor::~Reactor() {
-  /* destroy all conn */
   eventloops_[0]->epoller->DetachConn(acceptor_.get());
   acceptor_.reset();
   for (auto&& loop : eventloops_) {
     loop->Stop();
   }
+  // destroy all connections
+  mtx_.lock();
+  conns_.clear();
+  mtx_.unlock();
 }
 
 void Reactor::React() {
-  /* start background threads and start running */
+  // start background threads and start running
   for (size_t i = 0; i < num_loop_; i++) {
     worker_threads_.push_back(std::thread(
         [&](int index) {
@@ -111,7 +80,7 @@ bool Reactor::InitAcceptor() {
     std::cerr << "create acceptor fd failed: " << strerror(errno) << std::endl;
     return false;
   }
-  /* bind acceptor fd to addr */
+  // bind acceptor fd to addr
   if (bind(lfd, addr_->GetAddr(), addr_->GetSockAddrLen()) == -1) {
     std::cerr << "bind acceptor address failed : " << strerror(errno) << std::endl;
     return false;
@@ -127,7 +96,7 @@ bool Reactor::InitAcceptor() {
 }
 
 void Reactor::Acceptor(TCPConn* conn, bool& closed) {
-  /* accept incoming connection(session) and process */
+  // accept incoming connection(session) and process
   IPAddr4 addr;
   socklen_t socklen = addr.GetSockAddrLen();
   int remote_fd = accept(acceptor_->fd_, addr.GetAddr(), &socklen);
@@ -138,14 +107,15 @@ void Reactor::Acceptor(TCPConn* conn, bool& closed) {
     snprintf(buf, sizeof(buf), "*%s#%lu", addr.ToString().c_str(), next_conn_id_++);
     std::string conn_name = buf;
     auto selected_loop = EventLoopSelector();
+    // FIXME: reuse TCPConn instance from connection pool
     TCPConnPtr conn = std::make_shared<TCPConn>(
-        remote_fd, EPOLLIN, std::bind(&Reactor::Reader, this, _1, _2),
+        remote_fd, EPOLLIN, std::bind(&Reactor::FixedSizeReader, this, _1, _2),
         std::bind(&Reactor::Writer, this, _1, _2), selected_loop, conn_name);
     if (conn != nullptr) {
-      /* attach new session into epoll */
+      // attach new session into epoll
       SetFdNonBlock(remote_fd);
       conn->SetNoDelay(conn_nodelay_);
-      /* we use tcp keepalive to close broken socket connection */
+      // we use tcp keepalive to close broken socket connection
       conn->SetKeepAlive(conn_keepalive_);
       conn->SetKeepAlivePeriod(conn_keepalive_interval_);
       conn->SetKeepAliveCount(conn_keepalive_cnt_);
@@ -153,33 +123,41 @@ void Reactor::Acceptor(TCPConn* conn, bool& closed) {
         conn->watched_ = true;
         conns_[conn_name] = conn;
       }
+      conn->status_ = TCPConn::Status::OPEN;
     }
   }
 }
 
 // EPOLLIN handler
 // this method is called in multiple thread;
-void Reactor::Reader(TCPConn* conn, bool& closed) {
+void Reactor::FixedSizeReader(TCPConn* conn, bool& closed) {
   int fd = conn->fd_;
   Buffer& rbuf = conn->read_buf_;
-  IOReadWriteStatus status = ReadFromFdToBuf(fd, rbuf);
-  size_t nbytes = status.n_bytes;
-  ReadWriteStatusCode stcode = status.statuscode;
-  if ((nbytes == 0 && stcode == kStatusClosed) || stcode == kStatusError) {
-    /* conn closed */
-    conn->watched_ = false;
-    std::string cachename = conn->name_;
-    close(fd);
-    rbuf.Reset();
-    conns_.erase(conn->name_);
-    closed = true;
-    std::cout << "tcp connection: " << cachename << " closed\n";
-    return;
-  }
-  if (stcode == kStatusExhausted) {
-    /* all data in socket read buffer has been read, now we call the callback */
-    if (on_read_done_cb_ != nullptr) {
-      on_read_done_cb_(conn);
+  char tmpbuf[16] = {0};
+  // size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf));
+  int rflag = 0;
+  size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf), &rflag);
+  if (n == 0 && rflag == READ_SOCKET_CLOSED) {
+    // connection closed
+    if (ev_close_handler_ != nullptr) {
+      std::string cachename = conn->GetName();
+      close(fd);
+      conn->status_ = TCPConn::Status::CLOSED;
+      ev_close_handler_(conn);
+      rbuf.Reset();
+      mtx_.lock();
+      // FIXME reuse TCPConn instance
+      conns_.erase(conn->name_);
+      mtx_.unlock();
+      closed = true;
+      return;
+    }
+  } else {
+    // TODO do more error checking
+    // normal read
+    rbuf.Append(tmpbuf, n);
+    if (ev_read_handler_ != nullptr) {
+      ev_read_handler_(conn, rflag == READ_EOF_REACHED);
     }
     if (conn->write_buf_.ReadableBytes() > 0) {
       conn->SetMaskWrite();
@@ -199,10 +177,11 @@ void Reactor::Writer(TCPConn* conn, bool& closed) {
     return;
   }
   size_t n = wbuf.ReadableBytes();
-  size_t nbytes = WriteFromBuf(fd, static_cast<const char*>(wbuf.BeginRead()), n);
+  size_t nbytes =
+      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf.BeginRead()), n);
   if (nbytes > 0) {
     if (nbytes == n) {
-      /* all bytes have been sent */
+      // all bytes have been sent
       conn->SetMaskRead();
       conn->loop_->epoller->ModifyConn(conn);
       wbuf.Reset();

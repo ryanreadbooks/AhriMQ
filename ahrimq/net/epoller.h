@@ -8,14 +8,15 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include "tcp/tcpconn.h"
+#include "net/tcp/tcpconn.h"
 
-typedef struct epoll_event epoll_event;
+typedef struct epoll_event linux_epoll_event_t;
 
 namespace ahrimq {
 
-struct TCPConn;
+class TCPConn;
 
+/// @brief Epoller represents an epoll instance in linux
 class Epoller : public NoCopyable {
  public:
   explicit Epoller(size_t max_events);
@@ -30,7 +31,7 @@ class Epoller : public NoCopyable {
 
   int Wait(int timeout_ms);
 
-  std::vector<epoll_event> &GetEpollEvents() {
+  std::vector<linux_epoll_event_t> &GetEpollEvents() {
     return ep_events_;
   }
 
@@ -47,10 +48,10 @@ class Epoller : public NoCopyable {
   void Stop();
 
  private:
-  /* epoll file descriptor */
+  // epoll file descriptor
   int epfd_ = -1;
-  /* struct epoll_event */
-  std::vector<epoll_event> ep_events_;
+  // struct epoll_event
+  std::vector<linux_epoll_event_t> ep_events_;
 };
 
 typedef std::shared_ptr<Epoller> EpollerPtr;

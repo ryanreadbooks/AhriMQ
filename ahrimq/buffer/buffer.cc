@@ -10,9 +10,9 @@ void Buffer::Append(const std::string &value) {
 
 void Buffer::Append(const char *value, int len) {
   EnsureBytesForWrite(len);
-  /* append value to writable */
+  // append value to writable
   memcpy(BeginWrite(), value, len);
-  /* update p_writer */
+  // update p_writer
   p_writer_ += len;
 }
 
@@ -29,12 +29,13 @@ void Buffer::EnsureBytesForWrite(size_t n) {
     if (cur_free_space >= n) {
       MoveReadableToHead();
     } else {
-      /* need to alloc more space */
+      // need to alloc more space
       std::vector<char> new_place(p_writer_ + n + 2, 0);
-      size_t r = ReadableBytes(); /* log original readable size to update
-                                     p_writer_ after memcpy */
-      memcpy(new_place.data(), BeginRead(), r); /* discard prependable */
-      data_.swap(new_place); /* swap new and old space to save memory */
+      // log original readable size to update p_writer_ after memcpy
+      size_t r = ReadableBytes();
+      // discard prependable
+      memcpy(new_place.data(), BeginRead(), r);
+      data_.swap(new_place);  // swap new and old space to save memory
       p_reader_ = 0;
       p_writer_ = r;
     }
@@ -45,7 +46,7 @@ void Buffer::MoveReadableToHead() {
   memcpy(data_.data(), data_.data() + p_reader_, ReadableBytes());
   size_t can_free = PrependableBytes();
   memset(data_.data() + p_writer_ - can_free, 0, can_free);
-  /* update pointer */
+  // update pointer
   p_reader_ = 0;
   p_writer_ = p_writer_ - can_free;
 }
@@ -64,9 +65,7 @@ int Buffer::FindCRLFInReadable() {
   auto it_start = data_.begin() + p_reader_;
   auto it_end = data_.begin() + p_writer_;
   auto it = std::search(it_start, it_end, CRLF, CRLF + 2);
-  return (it == it_end)
-             ? -1
-             : (it - it_start); /* offset with respect to p_reader_ */
+  return (it == it_end) ? -1 : (it - it_start);  // offset with respect to p_reader_
 }
 
 std::string Buffer::ReadStringAndForward(size_t len) {
@@ -120,13 +119,13 @@ std::string Buffer::ReadStringFrom(size_t index, size_t len) {
 }
 
 char Buffer::ReadableCharacterAt(size_t index) const {
-  /* return the char at index in readable */
-  index = std::min(index, ReadableBytes() - 1); /* prevent overflow */
+  // return the char at index in readable
+  index = std::min(index, ReadableBytes() - 1);  // prevent overflow
   return data_[BeginReadIdx() + index];
 }
 
 long Buffer::ReadLongAndForward(size_t &step) {
-  /* convert readable bytes to int till not digit */
+  // convert readable bytes to int till not digit
   char *p_end;
   long num = strtoll(BeginRead(), &p_end, 10);
   step = p_end - BeginRead();
@@ -137,9 +136,8 @@ long Buffer::ReadLongAndForward(size_t &step) {
 long Buffer::ReadLong(size_t &step) {
   char *p_end;
   long num = strtoll(BeginRead(), &p_end, 10);
-  step =
-      p_end -
-      BeginRead(); /* if ok == 0, then no long number can be read from here */
+  // if ok == 0, then no long number can be read from here
+  step = p_end - BeginRead();
   return num;
 }
 

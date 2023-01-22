@@ -1,22 +1,24 @@
 #include "utils.h"
 
+#include <sys/ioctl.h>
+
 namespace ahrimq {
 
-size_t ReadToBuf(int fd, char *buf, size_t len) {
+size_t FixedSizeReadToBuf(int fd, char *buf, size_t len) {
   size_t total_read = 0;
   ssize_t bytes_read = 0;
   memset(buf, 0, len);
   while (total_read < len) {
     bytes_read = read(fd, buf + total_read, len - total_read);
-    if (bytes_read > 0) { /* read normally */
+    if (bytes_read > 0) {  // read normally
       total_read += bytes_read;
-    } else if (bytes_read == 0) { /* remote peer closed */
+    } else if (bytes_read == 0) {  // remote peer closed
       break;
-    } else if (bytes_read == -1) { /* error */
+    } else if (bytes_read == -1) {  // error
       if (errno == EINTR) {
         continue;
       } else {
-        /* errno == EAGAIN or errno == EWOULDBLOCK means can read no more */
+        // errno == EAGAIN or errno == EWOULDBLOCK means can read no more
         break;
       }
     }
@@ -24,14 +26,48 @@ size_t ReadToBuf(int fd, char *buf, size_t len) {
   return total_read;
 }
 
-size_t WriteFromBuf(int fd, const char *buf, size_t len) {
+size_t FixedSizeReadToBuf(int fd, char *buf, size_t len, int *flag) {
+  *flag = READ_EOF_NOT_REACHED;
+  size_t total_read = 0;
+  ssize_t bytes_read = 0;
+  memset(buf, 0, len);
+  while (total_read < len) {
+    size_t n_will_read = len - total_read;
+    bytes_read = read(fd, buf + total_read, n_will_read);
+    if (bytes_read > 0) {
+      total_read += bytes_read;
+    } else if (bytes_read == 0) {
+      *flag = READ_SOCKET_CLOSED;
+      break;
+    } else if (bytes_read == -1) {
+      if (errno == EINTR) {
+        continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        *flag = READ_EOF_REACHED;
+        break;
+      } else {
+        *flag = READ_PROCESS_ERROR;
+        break;
+      }
+    }
+  }
+  size_t remain = 0;
+  // try to retrieve the remaining bytes in socket read buffer
+  ioctl(fd, FIONREAD, &remain);
+  if (remain == 0 && *flag == READ_EOF_NOT_REACHED) {
+    *flag = READ_EOF_REACHED;
+  }
+  return total_read;
+}
+
+size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len) {
   size_t total_written = 0;
   ssize_t bytes_written = 0;
   while (total_written < len) {
     bytes_written = send(fd, buf + total_written, len - total_written, 0);
     if (bytes_written > 0) {
       total_written += bytes_written;
-    } else if (bytes_written == -1) { /* error */
+    } else if (bytes_written == -1) {  // error
       if (errno == EINTR) {
         continue;
       } else {

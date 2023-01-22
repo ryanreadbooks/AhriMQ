@@ -1,9 +1,9 @@
-#include "tcpconn.h"
+#include "net/tcp/tcpconn.h"
 
 namespace ahrimq {
 
-TCPConn::TCPConn(int fd, uint32_t mask, ConnHandler rhandler, ConnHandler whandler,
-                 EventLoop* loop, std::string name)
+TCPConn::TCPConn(int fd, uint32_t mask, EpollEventHandler rhandler,
+                 EpollEventHandler whandler, EventLoop* loop, std::string name)
     : fd_(fd),
       mask_(mask),
       read_proc_(std::move(rhandler)),
@@ -84,7 +84,7 @@ void TCPConn::SetNoDelay(bool nodelay) {
   }
 }
 
-IPAddr4Ptr TCPConn::LocalAddr() {
+IPAddr4Ptr TCPConn::LocalAddr() const {
   IPAddr4Ptr local = std::make_shared<IPAddr4>();
   socklen_t socklen = local->GetSockAddrLen();
   if (getsockname(fd_, local->GetAddr(), &socklen) == -1) {
@@ -94,7 +94,7 @@ IPAddr4Ptr TCPConn::LocalAddr() {
   return local;
 }
 
-IPAddr4Ptr TCPConn::PeerAddr() {
+IPAddr4Ptr TCPConn::PeerAddr() const {
   IPAddr4Ptr peer = std::make_shared<IPAddr4>();
   socklen_t socklen = peer->GetSockAddrLen();
   if (getpeername(fd_, peer->GetAddr(), &socklen) == -1) {

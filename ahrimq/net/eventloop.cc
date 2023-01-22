@@ -1,4 +1,4 @@
-#include "eventloop.h"
+#include "net/eventloop.h"
 
 namespace ahrimq {
 
@@ -25,7 +25,7 @@ void EventLoop::Loop() {
   while (!stopped) {
     int timeout_ms = -1;
     int ready = epoller->Wait(timeout_ms);
-    /* process events one by one */
+    // process events one by one
     // std::cout << "ready = " << ready << std::endl;
     debug_n += ready;
     for (int i = 0; ready != -1 && i < ready; ++i) {
@@ -34,7 +34,7 @@ void EventLoop::Loop() {
       if (!conn) {
         continue;
       }
-      /*　flag to indicate whether conn is freed to avoid memory issue */
+      // flag to indicate whether conn is freed to avoid memory issue
       bool closed = false;
       if (conn->mask_ & fired_events & EPOLLIN) {
         conn->read_proc_(conn, closed);

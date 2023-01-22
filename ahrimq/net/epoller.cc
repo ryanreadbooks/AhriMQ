@@ -1,4 +1,4 @@
-#include "epoller.h"
+#include "net/epoller.h"
 
 namespace ahrimq {
 
@@ -13,9 +13,7 @@ bool Epoller::AddFd(int fd, uint32_t events) {
   if (epfd_ == -1) {
     return false;
   }
-  struct epoll_event ev {
-    0
-  };
+  linux_epoll_event_t ev{0};
   ev.data.fd = fd;
   ev.events = events;
   return epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ev) == 0;
@@ -32,7 +30,7 @@ bool Epoller::ModifyFd(int fd, uint32_t events) {
   if (epfd_ == -1) {
     return false;
   }
-  struct epoll_event ev;
+  linux_epoll_event_t ev = {0};
   memset(&ev, 0, sizeof(ev));
   ev.data.fd = fd;
   ev.events = events;
@@ -51,7 +49,7 @@ bool Epoller::AttachConn(TCPConn *conn) {
   if (!conn) {
     return false;
   }
-  epoll_event epev{0};
+  linux_epoll_event_t epev{0};
   epev.data.ptr = static_cast<void *>(conn);
   epev.events = conn->mask_;
   int ans = -1;

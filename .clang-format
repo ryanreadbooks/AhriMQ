@@ -6,4 +6,5 @@ AlignTrailingComments : true
 AllowShortBlocksOnASingleLine : false
 AllowShortCaseLabelsOnASingleLine : false
 AllowShortFunctionsOnASingleLine : Empty
+AlignOperands: true
 ...

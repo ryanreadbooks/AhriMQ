@@ -19,9 +19,16 @@ namespace ahrimq {
 constexpr static int OK = 0;
 constexpr static int ERR = -1;
 
-size_t ReadToBuf(int fd, char *buf, size_t len);
+constexpr static int READ_EOF_REACHED = (1 << 1);
+constexpr static int READ_SOCKET_CLOSED = (1 << 2);
+constexpr static int READ_EOF_NOT_REACHED = (1 << 3);
+constexpr static int READ_PROCESS_ERROR = (1 << 4);
 
-size_t WriteFromBuf(int fd, const char *buf, size_t len);
+size_t FixedSizeReadToBuf(int fd, char *buf, size_t len);
+
+size_t FixedSizeReadToBuf(int fd, char *buf, size_t len, int *flag);
+
+size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len);
 
 int SetFdNonBlock(int fd);
 

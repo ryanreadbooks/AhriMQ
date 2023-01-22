@@ -3,10 +3,7 @@
 
 namespace ahrimq {
   
-/**
- * @brief This class is not copyable
- * 
- */
+/// @brief This class is not copyable
 class NoCopyable {
  public:
   NoCopyable(const NoCopyable&) = delete;

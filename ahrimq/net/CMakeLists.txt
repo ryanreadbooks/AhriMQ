@@ -25,17 +25,7 @@ ahrimq_create_dependency(
 
 ahrimq_add_cc_test(
   NAME
-    reactor_test
-  SRCS
-    "reactor_test.cc"
-  LINKS
-    ahrimq::net
-    ahrimq::buffer
-)
-
-ahrimq_add_cc_test(
-  NAME
-    tcpserver_test
+    tcp_server_test
   SRCS
     "tcp/tcp_server_test.cc"
   LINKS
