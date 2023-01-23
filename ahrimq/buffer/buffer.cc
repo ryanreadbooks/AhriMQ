@@ -11,7 +11,7 @@ void Buffer::Append(const std::string &value) {
 void Buffer::Append(const char *value, int len) {
   EnsureBytesForWrite(len);
   // append value to writable
-  memcpy(BeginWrite(), value, len);
+  memcpy(BeginWriteIndex(), value, len);
   // update p_writer
   p_writer_ += len;
 }
@@ -34,7 +34,7 @@ void Buffer::EnsureBytesForWrite(size_t n) {
       // log original readable size to update p_writer_ after memcpy
       size_t r = ReadableBytes();
       // discard prependable
-      memcpy(new_place.data(), BeginRead(), r);
+      memcpy(new_place.data(), BeginReadIndex(), r);
       data_.swap(new_place);  // swap new and old space to save memory
       p_reader_ = 0;
       p_writer_ = r;
@@ -61,6 +61,16 @@ void Buffer::ReaderIdxBackward(size_t len) {
   p_reader_ -= len;
 }
 
+void Buffer::WriterIdxForward(size_t len) {
+  len = std::min(len, WritableBytes());
+  p_writer_ += len;
+}
+
+void Buffer::WriterIdxBackward(size_t len) {
+  len = std::min(len, ReadableBytes());
+  p_writer_ -= len;
+}
+
 int Buffer::FindCRLFInReadable() {
   auto it_start = data_.begin() + p_reader_;
   auto it_end = data_.begin() + p_writer_;
@@ -72,7 +82,7 @@ std::string Buffer::ReadStringAndForward(size_t len) {
   if (len > ReadableBytes()) {
     return "";
   }
-  std::string ans(BeginRead(), len);
+  std::string ans(BeginReadIndex(), len);
   ReaderIdxForward(len);
   return ans;
 }
@@ -85,7 +95,7 @@ std::string Buffer::ReadStringAndForwardTill(const char *delim) {
   if (it == it_end) {
     return "";
   }
-  const char *begin_read = BeginRead();
+  const char *begin_read = BeginReadIndex();
   size_t offset = it - it_begin;
   ReaderIdxForward(offset + delim_len);
   return std::string(begin_read, offset);
@@ -98,7 +108,7 @@ std::vector<char> Buffer::ReadAll() {
   }
   std::vector<char> copy;
   copy.reserve(n);
-  copy.insert(copy.begin(), BeginRead(), BeginRead() + n);
+  copy.insert(copy.begin(), BeginReadIndex(), BeginReadIndex() + n);
   ReaderIdxForward(n);
   return std::move(copy);
 }
@@ -107,7 +117,7 @@ std::string Buffer::ReadString(size_t len) {
   if (len > ReadableBytes()) {
     return "";
   }
-  return std::string(BeginRead(), len);
+  return std::string(BeginReadIndex(), len);
 }
 
 std::string Buffer::ReadStringFrom(size_t index, size_t len) {
@@ -115,29 +125,29 @@ std::string Buffer::ReadStringFrom(size_t index, size_t len) {
     return "";
   }
   len = std::min(len, ReadableBytes() - index);
-  return std::string(BeginRead() + index, len);
+  return std::string(BeginReadIndex() + index, len);
 }
 
 char Buffer::ReadableCharacterAt(size_t index) const {
   // return the char at index in readable
   index = std::min(index, ReadableBytes() - 1);  // prevent overflow
-  return data_[BeginReadIdx() + index];
+  return data_[BeginRead() + index];
 }
 
 long Buffer::ReadLongAndForward(size_t &step) {
   // convert readable bytes to int till not digit
   char *p_end;
-  long num = strtoll(BeginRead(), &p_end, 10);
-  step = p_end - BeginRead();
+  long num = strtoll(BeginReadIndex(), &p_end, 10);
+  step = p_end - BeginReadIndex();
   ReaderIdxForward(step);
   return num;
 }
 
 long Buffer::ReadLong(size_t &step) {
   char *p_end;
-  long num = strtoll(BeginRead(), &p_end, 10);
+  long num = strtoll(BeginReadIndex(), &p_end, 10);
   // if ok == 0, then no long number can be read from here
-  step = p_end - BeginRead();
+  step = p_end - BeginReadIndex();
   return num;
 }
 
@@ -147,15 +157,50 @@ long Buffer::ReadLongFrom(size_t index, size_t &step) {
     step = 0;
     return 0;
   }
-  long num = strtoll(BeginRead() + index, &p_end, 10);
-  step = p_end - (BeginRead() + index);
+  long num = strtoll(BeginReadIndex() + index, &p_end, 10);
+  step = p_end - (BeginReadIndex() + index);
   return num;
 }
 
 void Buffer::ToFile(const std::string &file) {
   // flush readable bytes to file
   std::ofstream fs(file, std::ios::app);
-  fs.write(BeginRead(), ReadableBytes());
+  fs.write(BeginReadIndex(), ReadableBytes());
+}
+
+void Buffer::TrimLeft() {
+  if (ReadableBytes() == 0) {
+    return;
+  }
+  while (BeginRead() < BeginWrite()) {
+    char ch = ReadableCharacterAt(0);
+    if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+      ReaderIdxForward(1);
+      continue;
+    } else {
+      break;
+    }
+  }
+}
+
+void Buffer::TrimRight() {
+  if (ReadableBytes() == 0) {
+    return;
+  }
+  while (BeginRead() < BeginWrite()) {
+    char ch = ReadableCharacterAt(ReadableBytes() - 1);
+    if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+      p_writer_ -= 1;
+      continue;
+    } else {
+      break;
+    }
+  }
+}
+
+void Buffer::TrimLeftRight() {
+  TrimLeft();
+  TrimRight();
 }
 
 }  // namespace ahrimq

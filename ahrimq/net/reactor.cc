@@ -85,12 +85,16 @@ bool Reactor::InitAcceptor() {
     std::cerr << "bind acceptor address failed : " << strerror(errno) << std::endl;
     return false;
   }
+  // construct new acceptor
   acceptor_ = std::make_shared<ReactorConn>(
       lfd, EPOLLIN, std::bind(&Reactor::Acceptor, this, _1, _2), nullptr,
       eventloops_[0].get(), "conn-acceptor");
 
   listen(lfd, SOMAXCONN);
-  eventloops_[0]->epoller->AttachConn(acceptor_.get());
+  if (!eventloops_[0]->epoller->AttachConn(acceptor_.get())) {
+    std::cerr << "can not attach acceptor to epoller\n";
+    return false;
+  }
   acceptor_->watched_ = true;
   return true;
 }
@@ -114,12 +118,13 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
     if (conn != nullptr) {
       SetFdNonBlock(remote_fd);
       // attach new session into epoll
+      if (ev_accept_handler_ != nullptr) {
+        // in accept handler, we should set conn's read_buf and write_buf pointer
+        ev_accept_handler_(conn.get());
+      }
       if (selected_loop->epoller->AttachConn(conn.get())) {
         conn->watched_ = true;
         conns_[conn_name] = conn;
-        if (ev_accept_handler_ != nullptr) {
-          ev_accept_handler_(conn.get());
-        }
       }
     }
   }
@@ -132,10 +137,12 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
   Buffer* rbuf = conn->read_buf_;
   if (rbuf == nullptr) {
-    std::cerr << "rbuf is nullptr, invalid status!!\n";
+    mtx_.lock();
+    std::cerr << "[" << conn->GetName() << "] rbuf is nullptr, invalid status!!\n";
+    mtx_.unlock();
     return;
   }
-  char tmpbuf[16] = {0};
+  char tmpbuf[kNetReadBufSize] = {0};
   // size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf));
   int rflag = 0;
   size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf), &rflag);
@@ -157,7 +164,7 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
     if (ev_read_handler_ != nullptr) {
       ev_read_handler_(conn, rflag == READ_EOF_REACHED);
     }
-    if (conn->write_buf_->ReadableBytes() > 0) {
+    if (conn->write_buf_->Size() > 0) {
       conn->SetMaskWrite();
       conn->loop_->epoller->ModifyConn(conn);
     }
@@ -171,17 +178,19 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
   Buffer* wbuf = conn->write_buf_;
   if (wbuf == nullptr) {
-    std::cerr << "wbuf is nullptr, invalid status!!\n";
+    mtx_.lock();
+    std::cerr << "[" << conn->GetName() << "] wbuf is nullptr, invalid status!!\n";
+    mtx_.unlock();
     return;
   }
-  if (wbuf->ReadableBytes() <= 0) {
+  if (wbuf->Size() <= 0) {
     conn->SetMaskRead();
     conn->loop_->epoller->ModifyConn(conn);
     return;
   }
-  size_t n = wbuf->ReadableBytes();
+  size_t n = wbuf->Size();
   size_t nbytes =
-      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf->BeginRead()), n);
+      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf->BeginReadIndex()), n);
   if (nbytes > 0) {
     if (nbytes == n) {
       // all bytes have been sent
@@ -192,7 +201,7 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
       wbuf->ReaderIdxForward(nbytes);
     }
   }
-  if (nbytes == 0 && wbuf->ReadableBytes() != 0) {
+  if (nbytes == 0 && wbuf->Size() != 0) {
     conn->watched_ = false;
     wbuf->Reset();
     close(fd);

@@ -1,22 +1,22 @@
-#include "net/tcp/tcpconn.h"
+#include "net/tcp/tcp_conn.h"
 
 namespace ahrimq {
 
 TCPConn::TCPConn(ReactorConn* conn) : conn_(conn) {
   // FIXME: handle the situation where conn is nullptr
-  status_ = Status::OPEN;
+  status_ = Status::Open;
 }
 
 TCPConn::~TCPConn() {
   read_buf_.Reset();
   write_buf_.Reset();
   conn_ = nullptr;
-  status_ = Status::CLOSED;
+  status_ = Status::Closed;
 }
 
 /* copy all data from read_buf_ and consume all data in it */
 std::vector<char> TCPConn::ReadAll() {
-  size_t n = read_buf_.ReadableBytes();
+  size_t n = read_buf_.Size();
   if (n == 0) {
     return {};
   }
@@ -44,35 +44,35 @@ void TCPConn::ResetWriteBuffer() {
 }
 
 void TCPConn::Send() {
-  if (write_buf_.ReadableBytes() >= 0) {
+  if (write_buf_.Size() >= 0) {
     conn_->SetMaskWrite();
   }
 }
 
-void TCPConn::SetKeepAlive(bool keepalive) {
-  keepalive_ = keepalive;
-  if (keepalive_) {
+void TCPConn::SetTCPKeepAlive(bool keepalive) {
+  tcp_keepalive_ = keepalive;
+  if (tcp_keepalive_) {
     EnableTCPKeepAlive(conn_->fd_);
   } else {
     DisableTCPKeepAlive(conn_->fd_);
   }
 }
 
-void TCPConn::SetKeepAlivePeriod(uint64_t seconds) {
-  if (keepalive_) {
-    keepalive_period_ = seconds;
+void TCPConn::SetTCPKeepAlivePeriod(uint64_t seconds) {
+  if (tcp_keepalive_) {
+    tcp_keepalive_period_ = seconds;
     SetKeepAliveIdle(conn_->fd_, seconds);
     SetKeepAliveInterval(conn_->fd_, seconds);
   }
 }
-void TCPConn::SetKeepAliveCount(int cnt) {
-  if (keepalive_) {
-    keepalive_cnt_ = cnt;
+void TCPConn::SetTCPKeepAliveCount(int cnt) {
+  if (tcp_keepalive_) {
+    tcp_keepalive_cnt_ = cnt;
     SetKeepAliveCnt(conn_->fd_, cnt);
   }
 }
-void TCPConn::SetNoDelay(bool nodelay) {
-  nodelay_ = nodelay;
+void TCPConn::SetTCPNoDelay(bool nodelay) {
+  tcp_nodelay_ = nodelay;
   if (nodelay) {
     EnableTCPNoDelay(conn_->fd_);
   } else {

@@ -73,13 +73,6 @@ void TCPServer::Run() {
 // TODO: implement it
 void TCPServer::Stop() {}
 
-void TCPServer::InitReactorConfigs() {
-  reactor_->SetConnNoDelay(config_.tcp_nodelay);
-  reactor_->SetConnKeepAlive(config_.tcp_keepalive);
-  reactor_->SetConnKeepAliveInterval(config_.tcp_keepalive_period);
-  reactor_->SetConnKeepAliveCnt(config_.tcp_keepalive_count);
-}
-
 void TCPServer::InitReactorHandlers() {
   reactor_->SetEventAcceptHandler(std::bind(&TCPServer::OnStreamOpen, this, _1));
   reactor_->SetEventReadHandler(
@@ -91,8 +84,6 @@ void TCPServer::InitReactorHandlers() {
 void TCPServer::InitTCPServer() {
   // FIXME optimize error handling
   assert(reactor_ != nullptr);
-  // init reactor configs
-  InitReactorConfigs();
   // set handlers
   InitReactorHandlers();
 }
@@ -100,8 +91,12 @@ void TCPServer::InitTCPServer() {
 // create TCPConn instance when this function is called
 // this function may be invoked in multiple threads?
 void TCPServer::OnStreamOpen(ReactorConn* conn) {
-  mtx_.lock();
   TCPConnPtr tcpconn = std::make_shared<TCPConn>(conn);
+  tcpconn->SetTCPNoDelay(config_.tcp_nodelay);
+  tcpconn->SetTCPKeepAlive(config_.tcp_keepalive);
+  tcpconn->SetTCPKeepAlivePeriod(config_.tcp_keepalive_period);
+  tcpconn->SetTCPKeepAliveCount(config_.tcp_keepalive_count);
+  mtx_.lock();
   tcpconns_.insert({conn->GetName(), tcpconn});
   mtx_.unlock();
   conn->SetReadBuffer(&tcpconn->read_buf_);
@@ -115,7 +110,7 @@ void TCPServer::OnStreamClosed(ReactorConn* conn) {
   mtx_.lock();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
   mtx_.unlock();
-  tcpconn->status_ = TCPConn::Status::CLOSED;
+  tcpconn->status_ = TCPConn::Status::Closed;
   if (on_closed_cb_ != nullptr) {
     on_closed_cb_(tcpconns_[conn_name].get());
   }
@@ -126,11 +121,11 @@ void TCPServer::OnStreamClosed(ReactorConn* conn) {
 
 // we collect all bytes from fd buffer and invoke on_message_callback_
 // this function may be invoked in multiple threads?
-void TCPServer::OnStreamReached(ReactorConn* conn, bool all_been_read) {
+void TCPServer::OnStreamReached(ReactorConn* conn, bool allread) {
   std::string conn_name = conn->GetName();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
   if (on_message_cb_ != nullptr) {
-    if (all_been_read) {
+    if (allread) {
       on_message_cb_(tcpconn.get(), tcpconn->read_buf_);
     }
   }

@@ -11,9 +11,17 @@ int main(int argc, char** argv) {
 
   server.SetOnMessageCallback([&](ahrimq::TCPConn* conn, ahrimq::Buffer& message) {
     std::vector<char> data(conn->ReadAll());
-    std::cout << "Message received from " << conn->PeerAddr()->ToString() << ": "
-              << std::string(data.begin(), data.end()) << std::endl;
-    conn->AppendWriteBuffer(data);
+    std::cout << "Message received from " << conn->PeerAddr()->ToString() << std::endl;
+    std::string resp =
+        "HTTP/1.1 200 OK\r\n"
+        "Server: AhriMQ\r\n"
+        "Content-Type: application/json\r\n"
+        "Connection: keep-alive\r\n"
+        "Content-Length: 17\r\n"
+        "Content-Language: zh-CN\r\n"
+        "\r\n"
+        "{\"name\": \"hello\"}\n";
+    conn->AppendWriteBuffer(resp);
     conn->Send();
   });
 

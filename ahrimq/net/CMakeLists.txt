@@ -3,15 +3,17 @@ cmake_minimum_required(VERSION 3.5)
 ahrimq_create_dependency(
   NAME
     net
-    SRCS
+  SRCS
     "addr.cc"
     "epoller.cc"
     "eventloop.cc"
     "reactor.cc"
     "reactor_conn.cc"
     "utils.cc"
-    "tcp/tcpconn.cc"
+    "tcp/tcp_conn.cc"
     "tcp/tcp_server.cc"
+    "http/http_conn.cc"
+    "http/http_server.cc"
   INCS
     "addr.h"
     "epoller.h"
@@ -19,8 +21,10 @@ ahrimq_create_dependency(
     "reactor.h"
     "reactor_conn.h"
     "utils.h"
-    "tcp/tcpconn.h"
+    "tcp/tcp_conn.h"
     "tcp/tcp_server.h"
+    "http/http_conn.h"
+    "http/http_server.h"
   LINKS
     pthread
 )
@@ -30,6 +34,16 @@ ahrimq_add_cc_test(
     tcp_server_test
   SRCS
     "tcp/tcp_server_test.cc"
+  LINKS
+    ahrimq::net
+    ahrimq::buffer
+)
+
+ahrimq_add_cc_test(
+  NAME
+    http_server_test
+  SRCS
+    "http/http_server_test.cc"
   LINKS
     ahrimq::net
     ahrimq::buffer

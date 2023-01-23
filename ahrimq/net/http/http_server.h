@@ -9,6 +9,7 @@
 #include "net/iserver.h"
 #include "net/reactor_conn.h"
 #include "net/tcp/tcp_server.h"
+#include "net/http/http_conn.h"
 
 namespace ahrimq {
 namespace http {
@@ -21,6 +22,7 @@ typedef std::function<void(const HTTPRequest&, HTTPResponsePtr)> HTTPCallback;
 /// @brief HTTPServer implements a minimum HTTP/1.1 server
 class HTTPServer : public NoCopyable, public IServer {
  public:
+  /// @brief HTTP Server configuration
   class Config : public ahrimq::TCPServer::Config {
    public:
     // HTTP keepalive option
@@ -30,10 +32,17 @@ class HTTPServer : public NoCopyable, public IServer {
   };
 
  public:
+  /// @brief construct a HTTP server
   HTTPServer();
 
+  /// @brief construct a HTTP server with given configuration
+  /// @param config
   HTTPServer(const HTTPServer::Config& config);
 
+  /// @brief construct a HTTP server with given configuration and HTTP callback
+  /// function
+  /// @param config
+  /// @param cb
   HTTPServer(const HTTPServer::Config& config, HTTPCallback cb);
 
   ~HTTPServer();
@@ -43,33 +52,32 @@ class HTTPServer : public NoCopyable, public IServer {
   void Stop() override;
 
  protected:
-  void InitReactorConfigs() override;
-
   void InitReactorHandlers() override;
 
   void InitHTTPServer();
 
   void OnStreamOpen(ReactorConn* conn) override;
 
-  void OnStreamReached(ReactorConn* conn, bool all_been_read) override;
+  void OnStreamReached(ReactorConn* conn, bool allread) override;
 
   void OnStreamClosed(ReactorConn* conn) override;
 
   void OnStreamWritten(ReactorConn* conn) override;
 
  private:
-  // ReactorPtr reactor_;
-  // http config
+  // HTTP config
   HTTPServer::Config config_;
   // HTTP Callback
   HTTPCallback on_request_cb_;
+  // all HTTP connections
+  std::unordered_map<std::string, HTTPConnPtr> httpconns_;
 };
 
 typedef std::shared_ptr<HTTPServer> HTTPServerPtr;
 typedef HTTPServer::Config HTTPServerConfig;
-typedef std::shared_ptr<HTTPServer::Config> HTTPServerPtr;
+typedef std::shared_ptr<HTTPServer::Config> HTTPServerConfigPtr;
 
-HTTPServerConfig defaultHTTPConfig;
+static HTTPServer::Config defaultHTTPConfig;
 
 }  // namespace http
 }  // namespace ahrimq

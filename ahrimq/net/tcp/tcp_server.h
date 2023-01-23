@@ -3,7 +3,7 @@
 
 #include "net/iserver.h"
 #include "net/reactor.h"
-#include "net/tcp/tcpconn.h"
+#include "net/tcp/tcp_conn.h"
 
 namespace ahrimq {
 
@@ -83,11 +83,11 @@ class TCPServer : public NoCopyable, public IServer {
   /// @brief start the server
   void Run() override;
 
+  /// @brief stop the server
+  // TODO implement it
   void Stop() override;
 
  protected:
-  void InitReactorConfigs() override;
-
   void InitReactorHandlers() override;
 
   void InitTCPServer();
@@ -96,7 +96,7 @@ class TCPServer : public NoCopyable, public IServer {
 
   void OnStreamClosed(ReactorConn* conn) override;
 
-  void OnStreamReached(ReactorConn* conn, bool all_been_read) override;
+  void OnStreamReached(ReactorConn* conn, bool allread) override;
 
   void OnStreamWritten(ReactorConn* conn) override;
 
@@ -116,7 +116,7 @@ typedef std::shared_ptr<TCPServer> TCPServerPtr;
 typedef TCPServer::Config TCPServerConfig;
 typedef std::shared_ptr<TCPServer::Config> TCPServerConfigPtr;
 
-TCPServer::Config defaultTCPConfig;
+static TCPServer::Config defaultTCPConfig;
 
 }  // namespace ahrimq
 

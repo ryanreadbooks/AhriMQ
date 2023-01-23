@@ -39,38 +39,6 @@ class Reactor : public NoCopyable {
 
   void Wait();
 
-  void SetConnNoDelay(bool no_delay) {
-    conn_nodelay_ = no_delay;
-  }
-
-  bool ConnNoDelay() const {
-    return conn_nodelay_;
-  }
-
-  void SetConnKeepAlive(bool keepalive) {
-    conn_keepalive_ = keepalive;
-  }
-
-  bool ConnKeepAlive() const {
-    return conn_keepalive_;
-  }
-
-  void SetConnKeepAliveInterval(int interval) {
-    conn_keepalive_interval_ = interval;
-  }
-
-  int ConnKeepAliveInterval() const {
-    return conn_keepalive_interval_;
-  }
-
-  void SetConnKeepAliveCnt(int cnt) {
-    conn_keepalive_cnt_ = cnt;
-  }
-
-  int ConnKeepAliveCnt() const {
-    return conn_keepalive_cnt_;
-  }
-
   uint32_t NumLoops() const {
     return num_loop_;
   }
@@ -126,12 +94,6 @@ class Reactor : public NoCopyable {
   // connection id
   static uint64_t next_conn_id_;
 
-  // tcp connection configs for new connections, these may be changed by TCPConn API
-  bool conn_nodelay_;
-  bool conn_keepalive_;
-  int conn_keepalive_interval_;
-  int conn_keepalive_cnt_;
-
   // random number generator
   std::mt19937_64 rand_engine_;
 
@@ -141,7 +103,7 @@ class Reactor : public NoCopyable {
   // ev_close_handler_ is called every time a connection is closed
   ReactorGenericEventHandler ev_close_handler_;
   // ev_write_handler_ is called every time EPOLLOUT is reached
-  ReactorGenericEventHandler ev_write_handler_;  // FIXME: may obselete
+  ReactorGenericEventHandler ev_write_handler_;  // FIXME: may be obselete
   // ev_accept_handler_ is called every time a new connection is open
   ReactorGenericEventHandler ev_accept_handler_;
 };

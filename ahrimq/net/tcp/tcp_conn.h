@@ -38,9 +38,9 @@ class TCPConn : public NoCopyable {
 
  public:
   /// @brief Status represents TCPConn status (open/closed)
-  enum class Status { OPEN, CLOSED };
+  enum class Status { Open, Closed };
 
-  TCPConn(ReactorConn* conn);
+  explicit TCPConn(ReactorConn* conn);
 
   ~TCPConn();
 
@@ -85,43 +85,43 @@ class TCPConn : public NoCopyable {
 
   /// @brief enable of disable tcp keepalive
   /// @param keepalive
-  void SetKeepAlive(bool keepalive);
+  void SetTCPKeepAlive(bool keepalive);
 
   /// @brief check TCPConn is keepalive or not
   /// @return
-  bool KeepAlive() const {
-    return keepalive_;
+  bool TCPKeepAlive() const {
+    return tcp_keepalive_;
   }
 
   /// @brief set the interval between each tcp keepalive detection
   /// @param seconds
-  void SetKeepAlivePeriod(uint64_t seconds);
+  void SetTCPKeepAlivePeriod(uint64_t seconds);
 
   /// @brief get the tcp keepalive interval
   /// @return
-  int KeepAlivePeriod() const {
-    return keepalive_period_;
+  int TCPKeepAlivePeriod() const {
+    return tcp_keepalive_period_;
   }
 
   /// @brief set the maximum count of keepalive detection, if no response within cnt
   /// keepalive detection is received, tcp connection will be closed.
   /// @param cnt
-  void SetKeepAliveCount(int cnt);
+  void SetTCPKeepAliveCount(int cnt);
 
   /// @brief get the maximum count of keepalive detection
   /// @return
-  int KeepAliveCnt() const {
-    return keepalive_cnt_;
+  int TCPKeepAliveCnt() const {
+    return tcp_keepalive_cnt_;
   }
 
   /// @brief enable/disable nagle algorithm
   /// @param nodelay
-  void SetNoDelay(bool nodelay);
+  void SetTCPNoDelay(bool nodelay);
 
   /// @brief check if nagle algorithm is enabled
   /// @return
-  bool NoDelay() const {
-    return nodelay_;
+  bool TCPNoDelay() const {
+    return tcp_nodelay_;
   }
 
   /// @brief return local address
@@ -139,13 +139,13 @@ class TCPConn : public NoCopyable {
   /// @brief check whether tcp connection is closed
   /// @return
   bool ConnClosed() const {
-    return ConnStatus() == Status::CLOSED;
+    return ConnStatus() == Status::Closed;
   }
 
   /// @brief check whether tcp connection is open
   /// @return
   bool ConnOpen() const {
-    return ConnStatus() == Status::OPEN;
+    return ConnStatus() == Status::Open;
   }
 
   /// @brief get the file descriptor of tcp connection underneath
@@ -160,7 +160,7 @@ class TCPConn : public NoCopyable {
     return conn_->GetName();
   }
 
- private:
+ protected:
   // read buffer
   Buffer read_buf_;
   // write buffer
@@ -173,10 +173,10 @@ class TCPConn : public NoCopyable {
   Status status_;
 
   // basic tcp connection configs
-  bool nodelay_ = true;
-  bool keepalive_ = true;
-  int keepalive_period_ = 100;
-  int keepalive_cnt_ = 2;
+  bool tcp_nodelay_ = true;
+  bool tcp_keepalive_ = true;
+  int tcp_keepalive_period_ = 100;
+  int tcp_keepalive_cnt_ = 2;
 };
 
 typedef std::shared_ptr<TCPConn> TCPConnPtr;

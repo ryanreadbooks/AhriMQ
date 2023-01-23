@@ -27,19 +27,17 @@ class IServer {
 
   virtual void OnStreamClosed(ReactorConn* conn) = 0;
 
-  virtual void OnStreamReached(ReactorConn* conn, bool all_been_read) = 0;
+  virtual void OnStreamReached(ReactorConn* conn, bool allread) = 0;
 
   // FIXME maybe this is not needed
   virtual void OnStreamWritten(ReactorConn* conn) = 0;
 
  protected:
-  virtual void InitReactorConfigs() = 0;
-
   virtual void InitReactorHandlers() = 0;
 
  protected:
   ReactorPtr reactor_;
-  std::mutex mtx_;
+  mutable std::mutex mtx_;
   std::condition_variable cond_;
 };
 }  // namespace ahrimq

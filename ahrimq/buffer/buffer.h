@@ -35,13 +35,13 @@ class Buffer : public NoCopyable {
    *
    * @return size_t
    */
-  inline size_t BeginReadIdx() const {
+  inline size_t BeginRead() const {
     return p_reader_;
   }
 
   /// @brief get the writer index
   /// @return
-  inline size_t BeginWriteIdx() const {
+  inline size_t BeginWrite() const {
     return p_writer_;
   }
 
@@ -55,6 +55,13 @@ class Buffer : public NoCopyable {
   /// @return
   inline size_t ReadableBytes() const {
     return p_writer_ - p_reader_;
+  }
+
+  /// @brief return the size of buffer(readable bytes), this method is recommended,
+  /// because its name is more comprehensible
+  /// @return
+  inline size_t Size() const {
+    return ReadableBytes();
   }
 
   /// @brief get the number of prependable bytes
@@ -77,13 +84,13 @@ class Buffer : public NoCopyable {
 
   /// @brief get the pointer of the begin of readable bytes
   /// @return
-  inline char *BeginRead() {
+  inline char *BeginReadIndex() {
     return data_.data() + p_reader_;
   }
 
   /// @brief get the pointer of the begin of writable bytes
   /// @return
-  inline char *BeginWrite() {
+  inline char *BeginWriteIndex() {
     return data_.data() + p_writer_;
   }
 
@@ -103,13 +110,21 @@ class Buffer : public NoCopyable {
   /// @brief reset the buffer
   void Reset();
 
-  /// @brief move pointer to the left
+  /// @brief move reader pointer to the right
   /// @param len
   void ReaderIdxForward(size_t len);
 
-  /// @brief move pointer to the right
+  /// @brief move reader pointer to the left
   /// @param len
   void ReaderIdxBackward(size_t len);
+
+  /// @brief move writer pointer to the right
+  /// @param len 
+  void WriterIdxForward(size_t len);
+
+  /// @brief move writer pointer to the left
+  /// @param len 
+  void WriterIdxBackward(size_t len);
 
   /// @brief return a string
   /// @param len
@@ -160,6 +175,15 @@ class Buffer : public NoCopyable {
   /// @brief stream buffer to output file
   /// @param file
   void ToFile(const std::string &file);
+
+  /// @brief remove '\t', '\n', '\r', ' ' on the left side
+  void TrimLeft();
+
+  /// @brief remove '\t', '\n', '\r', ' ' on the right side
+  void TrimRight();
+
+  /// @brief remove '\t', '\n', '\r', ' ' on both side
+  void TrimLeftRight();
 
  private:
   /// @brief make sure there is enough room
