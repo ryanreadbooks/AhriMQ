@@ -1,12 +1,16 @@
 #ifndef _HTTP_REQUEST_H_
 #define _HTTP_REQUEST_H_
 
-namespace ahrimq {
+#include <memory>
 
+namespace ahrimq {
 namespace http {
 
-} // namespace http
+class HTTPRequest {};
 
-} // namespace ahrimq
+typedef std::shared_ptr<HTTPRequest> HTTPRequestPtr;
 
-#endif // _HTTP_REQUEST_H_
+}  // namespace http
+}  // namespace ahrimq
+
+#endif  // _HTTP_REQUEST_H_

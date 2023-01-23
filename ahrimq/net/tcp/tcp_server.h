@@ -1,6 +1,7 @@
 #ifndef _TCPSERVER_H_
 #define _TCPSERVER_H_
 
+#include "net/iserver.h"
 #include "net/reactor.h"
 #include "net/tcp/tcpconn.h"
 
@@ -29,67 +30,89 @@ struct IOReadWriteStatus {
 /// @return status indicating result
 IOReadWriteStatus ReadFromFdToBuf(int fd, Buffer& buf);
 
-#define DEFAULT_SERVER_IP "127.0.0.1"
-#define DEFAULT_SERVER_PORT 9527
-#define DEFAULT_SERVER_NODELAY true
-#define DEFAULT_SERVER_KEEPALIVE true
-#define DEFALUT_SERVER_KEEPALIVE_PERIOD 100  // unit second
-#define DEFALUT_SERVER_KEEPALIVE_COUNT 1
-#define DEFAULT_SERVER_N_THREADS std::thread::hardware_concurrency()
+#define DEFAULT_TCP_SERVER_IP "127.0.0.1"
+#define DEFAULT_TCP_SERVER_PORT 9527
+#define DEFAULT_TCP_SERVER_NODELAY true
+#define DEFAULT_TCP_SERVER_KEEPALIVE true
+#define DEFALUT_TCP_SERVER_KEEPALIVE_PERIOD 100  // unit second
+#define DEFALUT_TCP_SERVER_KEEPALIVE_COUNT 2
+#define DEFAULT_TCP_SERVER_N_THREADS std::thread::hardware_concurrency()
 
-// TCP basic configs
-class TCPServerConfig {
+/// @brief TCPServer implementation
+class TCPServer : public NoCopyable, public IServer {
  public:
-  std::string ip = DEFAULT_SERVER_IP;
-  uint16_t port = DEFAULT_SERVER_PORT;
-  bool nodelay = DEFAULT_SERVER_NODELAY;
-  bool keepalive = DEFAULT_SERVER_KEEPALIVE;
-  int keepalive_period = DEFALUT_SERVER_KEEPALIVE_PERIOD;
-  int keepalive_count = DEFALUT_SERVER_KEEPALIVE_COUNT;
-  uint32_t n_threads = DEFAULT_SERVER_N_THREADS;
-};
+  /// @brief TCP basic configs
+  class Config {
+   public:
+    std::string ip = DEFAULT_SERVER_IP;
+    uint16_t port = DEFAULT_SERVER_PORT;
+    bool tcp_nodelay = DEFAULT_SERVER_NODELAY;
+    bool tcp_keepalive = DEFAULT_SERVER_KEEPALIVE;
+    int tcp_keepalive_period = DEFALUT_SERVER_KEEPALIVE_PERIOD;
+    int tcp_keepalive_count = DEFALUT_SERVER_KEEPALIVE_COUNT;
+    uint32_t n_threads = DEFAULT_SERVER_N_THREADS;
+  };
 
-typedef std::shared_ptr<TCPServerConfig> TCPServerConfigPtr;
-
-class TCPServer : public NoCopyable {
  public:
-  TCPServer(const TCPServerConfig& config);
 
-  TCPServer(const TCPServerConfig& config, TCPMessageCallback on_read_cb);
+  /// @brief construct a TCPServer with default configs
+  TCPServer();
 
-  TCPServer(const TCPServer&) = delete;
+  /// @brief construct a TCPServer
+  /// @param config TCPServerConfig instance
+  TCPServer(const TCPServer::Config& config);
+
+  /// @brief construct a TCPServer with message callback
+  /// @param config TCPServerConfig instance
+  /// @param on_message_cb on message coming in callback function
+  TCPServer(const TCPServer::Config& config, TCPMessageCallback on_message_cb);
 
   ~TCPServer();
 
+  /// @brief set on message callback
+  /// @param cb callback function
   void SetOnMessageCallback(TCPMessageCallback cb) {
     on_message_cb_ = std::move(cb);
   }
 
+  /// @brief set connection closed callback function
+  /// @param cb
   void SetOnClosedCallback(TCPGenericCallback cb) {
     on_closed_cb_ = std::move(cb);
   }
 
-  void Run();
+  /// @brief start the server
+  void Run() override;
+
+  void Stop() override;
 
  protected:
-  void InitReactorConfig();
+  void InitReactorConfigs() override;
 
-  void InitReactorHandlers();
+  void InitReactorHandlers() override;
 
-  void OnStreamClosed(TCPConn* conn);
+  void InitTCPServer();
 
-  void OnStreamReached(TCPConn* conn, bool eof_reached);
+  void OnStreamClosed(TCPConn* conn) override;
 
-  void OnStreamWritten(TCPConn* conn);  // FIXME maybe this is not needed
+  void OnStreamReached(TCPConn* conn, bool all_been_read) override;
 
- protected:
-  ReactorPtr reactor_;
-  TCPServerConfig config_;
+  void OnStreamWritten(TCPConn* conn) override;
+
+ private:
+  // ReactorPtr reactor_;
+  TCPServer::Config config_;
 
   // user-specified callbacks
   TCPMessageCallback on_message_cb_;
   TCPGenericCallback on_closed_cb_;
 };
+
+typedef std::shared_ptr<TCPServer> TCPServerPtr;
+typedef TCPServer::Config TCPServerConfig;
+typedef std::shared_ptr<TCPServer::Config> TCPServerConfigPtr;
+
+TCPServer::Config defaultTCPConfig;
 
 }  // namespace ahrimq
 

@@ -118,7 +118,7 @@ class Reactor : public NoCopyable {
 
   // TODO: all threads that run eventloops
   std::vector<std::thread> worker_threads_;
-  std::mutex mtx_;
+  mutable std::mutex mtx_;
   std::condition_variable cond_;
 
   // connection id

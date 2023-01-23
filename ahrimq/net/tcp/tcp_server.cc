@@ -1,6 +1,7 @@
 #include "net/tcp/tcp_server.h"
 
-using namespace std::placeholders;  // _1, _2, ...
+using std::placeholders::_1;  // _1, _2, ...
+using std::placeholders::_2;
 
 namespace ahrimq {
 
@@ -38,21 +39,25 @@ IOReadWriteStatus ReadFromFdToBuf(int fd, Buffer& buf) {
   return status;
 }
 
-TCPServer::TCPServer(const TCPServerConfig& config)
-    : reactor_(std::make_shared<Reactor>(config.ip, config.port, config.n_threads)),
-      config_(config) {
-  assert(reactor_ != nullptr);
-  InitReactorConfig();
-  // set handlers
-  InitReactorHandlers();
+TCPServer::TCPServer()
+    : IServer(std::make_shared<Reactor>(defaultTCPConfig.ip, defaultTCPConfig.port,
+                                        defaultTCPConfig.n_threads)),
+      config_(defaultTCPConfig) {
+  InitTCPServer();
 }
 
-TCPServer::TCPServer(const TCPServerConfig& config, TCPMessageCallback on_read_cb)
-    : reactor_(std::make_shared<Reactor>(config.ip, config.port, config.n_threads)),
+TCPServer::TCPServer(const TCPServer::Config& config)
+    : IServer(std::make_shared<Reactor>(config.ip, config.port, config.n_threads)),
       config_(config) {
-  assert(reactor_ != nullptr);
-  InitReactorConfig();
-  InitReactorHandlers();
+  InitTCPServer();
+}
+
+TCPServer::TCPServer(const TCPServer::Config& config,
+                     TCPMessageCallback on_message_cb)
+    : IServer(std::make_shared<Reactor>(config.ip, config.port, config.n_threads)),
+      config_(config),
+      on_message_cb_(std::move(on_message_cb)) {
+  InitTCPServer();
 }
 
 TCPServer::~TCPServer() {
@@ -65,11 +70,16 @@ void TCPServer::Run() {
   reactor_->Wait();  // will block here
 }
 
-void TCPServer::InitReactorConfig() {
-  reactor_->SetConnNoDelay(config_.nodelay);
-  reactor_->SetConnKeepAlive(config_.keepalive);
-  reactor_->SetConnKeepAliveInterval(config_.keepalive_period);
-  reactor_->SetConnKeepAliveCnt(config_.keepalive_count);
+// TODO: implement it
+void TCPServer::Stop() {
+
+}
+
+void TCPServer::InitReactorConfigs() {
+  reactor_->SetConnNoDelay(config_.tcp_nodelay);
+  reactor_->SetConnKeepAlive(config_.tcp_keepalive);
+  reactor_->SetConnKeepAliveInterval(config_.tcp_keepalive_period);
+  reactor_->SetConnKeepAliveCnt(config_.tcp_keepalive_count);
 }
 
 void TCPServer::InitReactorHandlers() {
@@ -79,6 +89,15 @@ void TCPServer::InitReactorHandlers() {
   reactor_->SetEventWriteHandler(std::bind(&TCPServer::OnStreamWritten, this, _1));
 }
 
+void TCPServer::InitTCPServer() {
+  // FIXME optimize error handling
+  assert(reactor_ != nullptr);
+  // init reactor configs
+  InitReactorConfigs();
+  // set handlers
+  InitReactorHandlers();
+}
+
 void TCPServer::OnStreamClosed(TCPConn* conn) {
   if (on_closed_cb_ != nullptr) {
     on_closed_cb_(conn);
@@ -86,10 +105,10 @@ void TCPServer::OnStreamClosed(TCPConn* conn) {
 }
 
 // we collect all bytes from fd buffer and invoke on_message_callback_
-void TCPServer::OnStreamReached(TCPConn* conn, bool eof_reached) {
+void TCPServer::OnStreamReached(TCPConn* conn, bool all_been_read) {
   Buffer& rbuf = conn->GetReadBuffer();
   if (on_message_cb_ != nullptr) {
-    if (eof_reached) {
+    if (all_been_read) {
       on_message_cb_(conn, conn->read_buf_);
     }
   }
