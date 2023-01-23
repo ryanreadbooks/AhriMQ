@@ -15,6 +15,7 @@
 #include "net/addr.h"
 #include "net/epoller.h"
 #include "net/eventloop.h"
+#include "net/reactor_conn.h"
 #include "net/utils.h"
 
 namespace ahrimq {
@@ -24,8 +25,6 @@ struct EventLoop;
 class TCPConn;
 class Reactor;
 class TCPServer;
-
-typedef std::function<void(TCPConn*, bool&)> EpollEventHandler;
 
 typedef std::function<void(TCPConn*, Buffer&)> TCPMessageCallback;
 typedef std::function<void(TCPConn*)> TCPGenericCallback;
@@ -41,8 +40,7 @@ class TCPConn : public NoCopyable {
   /// @brief Status represents TCPConn status (open/closed)
   enum class Status { OPEN, CLOSED };
 
-  TCPConn(int fd, uint32_t mask, EpollEventHandler rhandler,
-          EpollEventHandler whandler, EventLoop* loop, std::string name);
+  TCPConn(ReactorConn* conn);
 
   ~TCPConn();
 
@@ -153,53 +151,24 @@ class TCPConn : public NoCopyable {
   /// @brief get the file descriptor of tcp connection underneath
   /// @return
   int GetFd() const {
-    return fd_;
+    return conn_->GetFd();
   }
 
   /// @brief get the name of tcp connection
   /// @return
   std::string GetName() const {
-    return name_;
+    return conn_->GetName();
   }
 
  private:
-  void SetMaskRead() {
-    mask_ = EPOLLIN;
-  }
-
-  void SetMaskWrite() {
-    mask_ |= EPOLLOUT;
-  }
-
-  void DisableMaskWrite() {
-    mask_ = EPOLLIN;
-  }
-
-  void SetMaskReadWrite() {
-    mask_ = EPOLLIN | EPOLLOUT;
-  }
-
- private:
-  // corresponding fd
-  int fd_;
-  // our interested events
-  uint32_t mask_;
-  // fired events
-  uint32_t events_;
-  // read handler: EPOLLIN
-  EpollEventHandler read_proc_;
-  // write handler: EPOLLOUT
-  EpollEventHandler write_proc_;
-  // which eventloop it belongs
-  EventLoop* loop_;
   // read buffer
   Buffer read_buf_;
   // write buffer
   Buffer write_buf_;
-  // the name of this TCPConn
-  std::string name_;
-  // indicate TCPConn is being watched or not
-  bool watched_ = false;
+
+  // corresponding conn
+  ReactorConn* conn_;
+
   // connection status
   Status status_;
 

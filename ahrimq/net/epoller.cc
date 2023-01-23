@@ -45,7 +45,7 @@ int Epoller::Wait(int timeout_ms) {
                     timeout_ms);
 }
 
-bool Epoller::AttachConn(TCPConn *conn) {
+bool Epoller::AttachConn(ReactorConn *conn) {
   if (!conn) {
     return false;
   }
@@ -64,11 +64,11 @@ bool Epoller::AttachConn(TCPConn *conn) {
   return ans == 0;
 }
 
-bool Epoller::ModifyConn(TCPConn *conn) {
+bool Epoller::ModifyConn(ReactorConn *conn) {
   return AttachConn(conn);
 }
 
-bool Epoller::DetachConn(TCPConn *conn) {
+bool Epoller::DetachConn(ReactorConn *conn) {
   if (!conn) {
     return false;
   }

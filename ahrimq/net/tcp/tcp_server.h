@@ -44,17 +44,16 @@ class TCPServer : public NoCopyable, public IServer {
   /// @brief TCP basic configs
   class Config {
    public:
-    std::string ip = DEFAULT_SERVER_IP;
-    uint16_t port = DEFAULT_SERVER_PORT;
-    bool tcp_nodelay = DEFAULT_SERVER_NODELAY;
-    bool tcp_keepalive = DEFAULT_SERVER_KEEPALIVE;
-    int tcp_keepalive_period = DEFALUT_SERVER_KEEPALIVE_PERIOD;
-    int tcp_keepalive_count = DEFALUT_SERVER_KEEPALIVE_COUNT;
-    uint32_t n_threads = DEFAULT_SERVER_N_THREADS;
+    std::string ip = DEFAULT_TCP_SERVER_IP;
+    uint16_t port = DEFAULT_TCP_SERVER_PORT;
+    bool tcp_nodelay = DEFAULT_TCP_SERVER_NODELAY;
+    bool tcp_keepalive = DEFAULT_TCP_SERVER_KEEPALIVE;
+    int tcp_keepalive_period = DEFALUT_TCP_SERVER_KEEPALIVE_PERIOD;
+    int tcp_keepalive_count = DEFALUT_TCP_SERVER_KEEPALIVE_COUNT;
+    uint32_t n_threads = DEFAULT_TCP_SERVER_N_THREADS;
   };
 
  public:
-
   /// @brief construct a TCPServer with default configs
   TCPServer();
 
@@ -93,15 +92,20 @@ class TCPServer : public NoCopyable, public IServer {
 
   void InitTCPServer();
 
-  void OnStreamClosed(TCPConn* conn) override;
+  void OnStreamOpen(ReactorConn* conn) override;
 
-  void OnStreamReached(TCPConn* conn, bool all_been_read) override;
+  void OnStreamClosed(ReactorConn* conn) override;
 
-  void OnStreamWritten(TCPConn* conn) override;
+  void OnStreamReached(ReactorConn* conn, bool all_been_read) override;
+
+  void OnStreamWritten(ReactorConn* conn) override;
 
  private:
   // ReactorPtr reactor_;
   TCPServer::Config config_;
+
+  // all tcp connections
+  std::unordered_map<std::string, TCPConnPtr> tcpconns_;
 
   // user-specified callbacks
   TCPMessageCallback on_message_cb_;

@@ -2,20 +2,16 @@
 
 namespace ahrimq {
 
-TCPConn::TCPConn(int fd, uint32_t mask, EpollEventHandler rhandler,
-                 EpollEventHandler whandler, EventLoop* loop, std::string name)
-    : fd_(fd),
-      mask_(mask),
-      read_proc_(std::move(rhandler)),
-      write_proc_(std::move(whandler)),
-      loop_(loop),
-      name_(std::move(name)) {}
+TCPConn::TCPConn(ReactorConn* conn) : conn_(conn) {
+  // FIXME: handle the situation where conn is nullptr
+  status_ = Status::OPEN;
+}
 
 TCPConn::~TCPConn() {
   read_buf_.Reset();
   write_buf_.Reset();
-  watched_ = false;
-  close(fd_);
+  conn_ = nullptr;
+  status_ = Status::CLOSED;
 }
 
 /* copy all data from read_buf_ and consume all data in it */
@@ -49,45 +45,45 @@ void TCPConn::ResetWriteBuffer() {
 
 void TCPConn::Send() {
   if (write_buf_.ReadableBytes() >= 0) {
-    SetMaskWrite();
+    conn_->SetMaskWrite();
   }
 }
 
 void TCPConn::SetKeepAlive(bool keepalive) {
   keepalive_ = keepalive;
   if (keepalive_) {
-    EnableTCPKeepAlive(fd_);
+    EnableTCPKeepAlive(conn_->fd_);
   } else {
-    DisableTCPKeepAlive(fd_);
+    DisableTCPKeepAlive(conn_->fd_);
   }
 }
 
 void TCPConn::SetKeepAlivePeriod(uint64_t seconds) {
   if (keepalive_) {
     keepalive_period_ = seconds;
-    SetKeepAliveIdle(fd_, seconds);
-    SetKeepAliveInterval(fd_, seconds);
+    SetKeepAliveIdle(conn_->fd_, seconds);
+    SetKeepAliveInterval(conn_->fd_, seconds);
   }
 }
 void TCPConn::SetKeepAliveCount(int cnt) {
   if (keepalive_) {
     keepalive_cnt_ = cnt;
-    SetKeepAliveCnt(fd_, cnt);
+    SetKeepAliveCnt(conn_->fd_, cnt);
   }
 }
 void TCPConn::SetNoDelay(bool nodelay) {
   nodelay_ = nodelay;
   if (nodelay) {
-    EnableTCPNoDelay(fd_);
+    EnableTCPNoDelay(conn_->fd_);
   } else {
-    DisableTCPNoDelay(fd_);
+    DisableTCPNoDelay(conn_->fd_);
   }
 }
 
 IPAddr4Ptr TCPConn::LocalAddr() const {
   IPAddr4Ptr local = std::make_shared<IPAddr4>();
   socklen_t socklen = local->GetSockAddrLen();
-  if (getsockname(fd_, local->GetAddr(), &socklen) == -1) {
+  if (getsockname(conn_->fd_, local->GetAddr(), &socklen) == -1) {
     return nullptr;
   }
   local->SyncPort();
@@ -97,7 +93,7 @@ IPAddr4Ptr TCPConn::LocalAddr() const {
 IPAddr4Ptr TCPConn::PeerAddr() const {
   IPAddr4Ptr peer = std::make_shared<IPAddr4>();
   socklen_t socklen = peer->GetSockAddrLen();
-  if (getpeername(fd_, peer->GetAddr(), &socklen) == -1) {
+  if (getpeername(conn_->fd_, peer->GetAddr(), &socklen) == -1) {
     return nullptr;
   }
   peer->SyncPort();

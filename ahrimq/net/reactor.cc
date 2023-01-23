@@ -85,7 +85,7 @@ bool Reactor::InitAcceptor() {
     std::cerr << "bind acceptor address failed : " << strerror(errno) << std::endl;
     return false;
   }
-  acceptor_ = std::make_shared<TCPConn>(
+  acceptor_ = std::make_shared<ReactorConn>(
       lfd, EPOLLIN, std::bind(&Reactor::Acceptor, this, _1, _2), nullptr,
       eventloops_[0].get(), "conn-acceptor");
 
@@ -95,7 +95,7 @@ bool Reactor::InitAcceptor() {
   return true;
 }
 
-void Reactor::Acceptor(TCPConn* conn, bool& closed) {
+void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
   // accept incoming connection(session) and process
   IPAddr4 addr;
   socklen_t socklen = addr.GetSockAddrLen();
@@ -107,32 +107,34 @@ void Reactor::Acceptor(TCPConn* conn, bool& closed) {
     snprintf(buf, sizeof(buf), "*%s#%lu", addr.ToString().c_str(), next_conn_id_++);
     std::string conn_name = buf;
     auto selected_loop = EventLoopSelector();
-    // FIXME: reuse TCPConn instance from connection pool
-    TCPConnPtr conn = std::make_shared<TCPConn>(
-        remote_fd, EPOLLIN, std::bind(&Reactor::FixedSizeReader, this, _1, _2),
+    // FIXME: reuse conn instance from connection pool
+    ReactorConnPtr conn = std::make_shared<ReactorConn>(
+        remote_fd, EPOLLIN, std::bind(&Reactor::Reader, this, _1, _2),
         std::bind(&Reactor::Writer, this, _1, _2), selected_loop, conn_name);
     if (conn != nullptr) {
-      // attach new session into epoll
       SetFdNonBlock(remote_fd);
-      conn->SetNoDelay(conn_nodelay_);
-      // we use tcp keepalive to close broken socket connection
-      conn->SetKeepAlive(conn_keepalive_);
-      conn->SetKeepAlivePeriod(conn_keepalive_interval_);
-      conn->SetKeepAliveCount(conn_keepalive_cnt_);
+      // attach new session into epoll
       if (selected_loop->epoller->AttachConn(conn.get())) {
         conn->watched_ = true;
         conns_[conn_name] = conn;
+        if (ev_accept_handler_ != nullptr) {
+          ev_accept_handler_(conn.get());
+        }
       }
-      conn->status_ = TCPConn::Status::OPEN;
     }
   }
 }
 
 // EPOLLIN handler
 // this method is called in multiple thread;
-void Reactor::FixedSizeReader(TCPConn* conn, bool& closed) {
+// all we do in this function is to read fd and put data into conn->read_buf_
+void Reactor::Reader(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
-  Buffer& rbuf = conn->read_buf_;
+  Buffer* rbuf = conn->read_buf_;
+  if (rbuf == nullptr) {
+    std::cerr << "rbuf is nullptr, invalid status!!\n";
+    return;
+  }
   char tmpbuf[16] = {0};
   // size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf));
   int rflag = 0;
@@ -140,26 +142,22 @@ void Reactor::FixedSizeReader(TCPConn* conn, bool& closed) {
   if (n == 0 && rflag == READ_SOCKET_CLOSED) {
     // connection closed
     if (ev_close_handler_ != nullptr) {
-      std::string cachename = conn->GetName();
-      close(fd);
-      conn->status_ = TCPConn::Status::CLOSED;
       ev_close_handler_(conn);
-      rbuf.Reset();
-      mtx_.lock();
+      close(fd);
+      rbuf->Reset();
       // FIXME reuse TCPConn instance
       conns_.erase(conn->name_);
-      mtx_.unlock();
       closed = true;
       return;
     }
   } else {
     // TODO do more error checking
     // normal read
-    rbuf.Append(tmpbuf, n);
+    rbuf->Append(tmpbuf, n);
     if (ev_read_handler_ != nullptr) {
       ev_read_handler_(conn, rflag == READ_EOF_REACHED);
     }
-    if (conn->write_buf_.ReadableBytes() > 0) {
+    if (conn->write_buf_->ReadableBytes() > 0) {
       conn->SetMaskWrite();
       conn->loop_->epoller->ModifyConn(conn);
     }
@@ -168,30 +166,35 @@ void Reactor::FixedSizeReader(TCPConn* conn, bool& closed) {
 
 // EPOLLOUT handler
 // this method is called in multiple thread;
-void Reactor::Writer(TCPConn* conn, bool& closed) {
+// all we do in this function is to write out all bytes in conn->write_buf_
+void Reactor::Writer(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
-  Buffer& wbuf = conn->write_buf_;
-  if (wbuf.ReadableBytes() <= 0) {
+  Buffer* wbuf = conn->write_buf_;
+  if (wbuf == nullptr) {
+    std::cerr << "wbuf is nullptr, invalid status!!\n";
+    return;
+  }
+  if (wbuf->ReadableBytes() <= 0) {
     conn->SetMaskRead();
     conn->loop_->epoller->ModifyConn(conn);
     return;
   }
-  size_t n = wbuf.ReadableBytes();
+  size_t n = wbuf->ReadableBytes();
   size_t nbytes =
-      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf.BeginRead()), n);
+      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf->BeginRead()), n);
   if (nbytes > 0) {
     if (nbytes == n) {
       // all bytes have been sent
       conn->SetMaskRead();
       conn->loop_->epoller->ModifyConn(conn);
-      wbuf.Reset();
+      wbuf->Reset();
     } else {
-      wbuf.ReaderIdxForward(nbytes);
+      wbuf->ReaderIdxForward(nbytes);
     }
   }
-  if (nbytes == 0 && wbuf.ReadableBytes() != 0) {
+  if (nbytes == 0 && wbuf->ReadableBytes() != 0) {
     conn->watched_ = false;
-    wbuf.Reset();
+    wbuf->Reset();
     close(fd);
     conns_.erase(conn->name_);
     closed = true;

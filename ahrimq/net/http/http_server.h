@@ -4,9 +4,10 @@
 #include <memory>
 
 #include "base/nocopyable.h"
-#include "net/iserver.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
+#include "net/iserver.h"
+#include "net/reactor_conn.h"
 #include "net/tcp/tcp_server.h"
 
 namespace ahrimq {
@@ -38,7 +39,7 @@ class HTTPServer : public NoCopyable, public IServer {
   ~HTTPServer();
 
   void Run() override;
-  
+
   void Stop() override;
 
  protected:
@@ -48,11 +49,13 @@ class HTTPServer : public NoCopyable, public IServer {
 
   void InitHTTPServer();
 
-  void OnStreamReached(TCPConn* conn, bool all_been_read) override;
+  void OnStreamOpen(ReactorConn* conn) override;
 
-  void OnStreamClosed(TCPConn* conn) override;
+  void OnStreamReached(ReactorConn* conn, bool all_been_read) override;
 
-  void OnStreamWritten(TCPConn* conn) override;
+  void OnStreamClosed(ReactorConn* conn) override;
+
+  void OnStreamWritten(ReactorConn* conn) override;
 
  private:
   // ReactorPtr reactor_;

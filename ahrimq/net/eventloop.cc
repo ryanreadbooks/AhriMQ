@@ -30,7 +30,7 @@ void EventLoop::Loop() {
     debug_n += ready;
     for (int i = 0; ready != -1 && i < ready; ++i) {
       uint32_t fired_events = epoller->GetEpollEvents()[i].events;
-      TCPConn *conn = static_cast<TCPConn *>(epoller->GetEpollEvents()[i].data.ptr);
+      ReactorConn *conn = static_cast<ReactorConn *>(epoller->GetEpollEvents()[i].data.ptr);
       if (!conn) {
         continue;
       }

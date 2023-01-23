@@ -1,7 +1,11 @@
 #ifndef _ISERVER_H_
 #define _ISERVER_H_
 
+#include <mutex>
+#include <condition_variable>
+
 #include "net/reactor.h"
+#include "net/reactor_conn.h"
 
 namespace ahrimq {
 
@@ -19,11 +23,14 @@ class IServer {
   virtual void Stop() = 0;
 
  protected:
-  virtual void OnStreamClosed(TCPConn* conn) = 0;
+  virtual void OnStreamOpen(ReactorConn* conn) = 0;
 
-  virtual void OnStreamReached(TCPConn* conn, bool all_been_read) = 0;
+  virtual void OnStreamClosed(ReactorConn* conn) = 0;
 
-  virtual void OnStreamWritten(TCPConn* conn) = 0;  // FIXME maybe this is not needed
+  virtual void OnStreamReached(ReactorConn* conn, bool all_been_read) = 0;
+
+  // FIXME maybe this is not needed
+  virtual void OnStreamWritten(ReactorConn* conn) = 0;
 
  protected:
   virtual void InitReactorConfigs() = 0;
@@ -32,6 +39,8 @@ class IServer {
 
  protected:
   ReactorPtr reactor_;
+  std::mutex mtx_;
+  std::condition_variable cond_;
 };
 }  // namespace ahrimq
 

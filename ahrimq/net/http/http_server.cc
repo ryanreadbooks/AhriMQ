@@ -42,6 +42,7 @@ void HTTPServer::InitReactorConfigs() {
 }
 
 void HTTPServer::InitReactorHandlers() {
+  reactor_->SetEventAcceptHandler(std::bind(&HTTPServer::OnStreamOpen, this, _1));
   reactor_->SetEventReadHandler(
       std::bind(&HTTPServer::OnStreamReached, this, _1, _2));
   reactor_->SetEventCloseHandler(std::bind(&HTTPServer::OnStreamClosed, this, _1));
@@ -54,11 +55,13 @@ void HTTPServer::InitHTTPServer() {
   InitReactorHandlers();
 }
 
-void HTTPServer::OnStreamReached(TCPConn* conn, bool all_been_read) {}
+void HTTPServer::OnStreamOpen(ReactorConn* conn) {}
 
-void HTTPServer::OnStreamClosed(TCPConn* conn) {}
+void HTTPServer::OnStreamReached(ReactorConn* conn, bool all_been_read) {}
 
-void HTTPServer::OnStreamWritten(TCPConn* conn) {}
+void HTTPServer::OnStreamClosed(ReactorConn* conn) {}
+
+void HTTPServer::OnStreamWritten(ReactorConn* conn) {}
 
 }  // namespace http
 }  // namespace ahrimq

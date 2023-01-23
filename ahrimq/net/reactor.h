@@ -18,13 +18,13 @@
 #include "net/addr.h"
 #include "net/epoller.h"
 #include "net/eventloop.h"
-#include "net/tcp/tcpconn.h"
+#include "net/reactor_conn.h"
 #include "net/utils.h"
 
 namespace ahrimq {
 
-typedef std::function<void(TCPConn* conn, bool)> ReactorReadEventHandler;
-typedef std::function<void(TCPConn* conn)> ReactorEventHandler;
+typedef std::function<void(ReactorConn* conn, bool)> ReactorReadEventHandler;
+typedef std::function<void(ReactorConn* conn)> ReactorGenericEventHandler;
 
 constexpr static int kNetReadBufSize = 65536;
 
@@ -79,12 +79,16 @@ class Reactor : public NoCopyable {
     ev_read_handler_ = std::move(hdr);
   }
 
-  void SetEventCloseHandler(ReactorEventHandler hdr) {
+  void SetEventCloseHandler(ReactorGenericEventHandler hdr) {
     ev_close_handler_ = std::move(hdr);
   }
 
-  void SetEventWriteHandler(ReactorEventHandler hdr) {
+  void SetEventWriteHandler(ReactorGenericEventHandler hdr) {
     ev_write_handler_ = std::move(hdr);
+  }
+
+  void SetEventAcceptHandler(ReactorGenericEventHandler hdr) {
+    ev_accept_handler_ = std::move(hdr);
   }
 
  private:
@@ -94,13 +98,11 @@ class Reactor : public NoCopyable {
 
   bool InitAcceptor();
 
-  void Acceptor(TCPConn* conn, bool& closed);
+  void Acceptor(ReactorConn* conn, bool& closed);
 
-  // void Reader(TCPConn* conn, bool& closed);
+  void Reader(ReactorConn* conn, bool& closed);
 
-  void FixedSizeReader(TCPConn* conn, bool& closed);
-
-  void Writer(TCPConn* conn, bool& closed);
+  void Writer(ReactorConn* conn, bool& closed);
 
   EventLoop* EventLoopSelector();
 
@@ -110,11 +112,11 @@ class Reactor : public NoCopyable {
   // the eventloops in reactor
   std::vector<EventLoopPtr> eventloops_;
   // acceptor
-  TCPConnPtr acceptor_;
+  ReactorConnPtr acceptor_;
   // ipv4 address
   IPAddr4Ptr addr_;
   // all connections
-  std::unordered_map<std::string, TCPConnPtr> conns_;
+  std::unordered_map<std::string, ReactorConnPtr> conns_;
 
   // TODO: all threads that run eventloops
   std::vector<std::thread> worker_threads_;
@@ -137,9 +139,11 @@ class Reactor : public NoCopyable {
   // ev_read_handler_ is called every time EPOLLIN is reached
   ReactorReadEventHandler ev_read_handler_;
   // ev_close_handler_ is called every time a connection is closed
-  ReactorEventHandler ev_close_handler_;
+  ReactorGenericEventHandler ev_close_handler_;
   // ev_write_handler_ is called every time EPOLLOUT is reached
-  ReactorEventHandler ev_write_handler_;  // FIXME: may obselete
+  ReactorGenericEventHandler ev_write_handler_;  // FIXME: may obselete
+  // ev_accept_handler_ is called every time a new connection is open
+  ReactorGenericEventHandler ev_accept_handler_;
 };
 
 typedef std::shared_ptr<Reactor> ReactorPtr;

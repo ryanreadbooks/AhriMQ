@@ -13,12 +13,12 @@
 #include <vector>
 
 #include "net/epoller.h"
-#include "net/tcp/tcpconn.h"
+#include "net/reactor_conn.h"
 
 namespace ahrimq {
 
-class TCPConn;
 class Epoller;
+class ReactorConn;
 
 struct EventLoop : public NoCopyable {
   Epoller *epoller = nullptr;

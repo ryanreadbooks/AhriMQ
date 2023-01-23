@@ -8,13 +8,13 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include "net/tcp/tcpconn.h"
+#include "net/reactor_conn.h"
 
 typedef struct epoll_event linux_epoll_event_t;
 
 namespace ahrimq {
 
-class TCPConn;
+class ReactorConn;
 
 /// @brief Epoller represents an epoll instance in linux
 class Epoller : public NoCopyable {
@@ -35,11 +35,11 @@ class Epoller : public NoCopyable {
     return ep_events_;
   }
 
-  bool AttachConn(TCPConn *conn);
+  bool AttachConn(ReactorConn *conn);
 
-  bool ModifyConn(TCPConn *conn);
+  bool ModifyConn(ReactorConn *conn);
 
-  bool DetachConn(TCPConn *conn);
+  bool DetachConn(ReactorConn *conn);
 
   int GetFd() const {
     return epfd_;
