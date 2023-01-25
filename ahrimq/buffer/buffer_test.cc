@@ -88,6 +88,17 @@ TEST(BufferTest, TrimLeftRightTest) {
   ASSERT_STREQ("helloworldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", buf.ReadableAsString().c_str());
 }
 
+TEST(BufferTest, CRLFTest) {
+  ahrimq::Buffer buf;
+  buf.Append("\r\n");
+  std::string s = buf.ReadStringAndForwardTill("\r\n");
+  if (s.empty()) {
+    std::cout << "s is empty\n";
+  }
+  std::cout << buf.ReadableAsString() << std::endl;
+  std::cout << "-------\n";
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

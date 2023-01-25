@@ -147,10 +147,16 @@ class Buffer : public NoCopyable {
   /// @return
   char ReadableCharacterAt(size_t index) const;
 
-  /// @brief read string from buffer and forward the pointer till delmi
+  /// @brief read string from buffer and forward the pointer till delim
   /// @param delim
   /// @return
   std::string ReadStringAndForwardTill(const char *delim = "\r\n");
+
+  /// @brief read string from buffer and forward the pointer till delim
+  /// @param delim the delimitor
+  /// @param found output arg, if delim is found in buffer
+  /// @return 
+  std::string ReadStringAndForwardTill(const char *delim, bool& found);
 
   /// @brief consume all bytes in readable
   /// @return

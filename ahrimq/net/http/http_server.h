@@ -28,7 +28,7 @@ class HTTPServer : public NoCopyable, public IServer {
     // HTTP keepalive option
     bool http_keepalive;
     // indicate HTTPS
-    bool http_secure;  // (reserved)
+    bool _http_secure;  // (reserved)
   };
 
  public:
@@ -64,6 +64,15 @@ class HTTPServer : public NoCopyable, public IServer {
 
   void OnStreamWritten(ReactorConn* conn) override;
 
+  /// @brief handle one single http request, and organize http response
+  /// @param conn 
+  void DoRequest(HTTPConn* conn);
+
+  /// @brief 
+  /// @param conn 
+  /// @param errcode 
+  void DoRequestError(HTTPConn* conn, int errcode);
+
  private:
   // HTTP config
   HTTPServer::Config config_;
@@ -77,6 +86,7 @@ typedef std::shared_ptr<HTTPServer> HTTPServerPtr;
 typedef HTTPServer::Config HTTPServerConfig;
 typedef std::shared_ptr<HTTPServer::Config> HTTPServerConfigPtr;
 
+// must be static
 static HTTPServer::Config defaultHTTPConfig;
 
 }  // namespace http

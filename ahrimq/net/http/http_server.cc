@@ -1,5 +1,7 @@
 #include "net/http/http_server.h"
 
+#include "base/time_utils.h"
+
 using std::placeholders::_1;  // _1, _2, ...
 using std::placeholders::_2;
 
@@ -7,7 +9,8 @@ namespace ahrimq {
 namespace http {
 
 HTTPServer::HTTPServer()
-    : IServer(std::make_shared<Reactor>(ahrimq::defaultTCPConfig.ip, DEFAULT_HTTP_PORT,
+    : IServer(std::make_shared<Reactor>(ahrimq::defaultTCPConfig.ip,
+                                        DEFAULT_HTTP_PORT,
                                         ahrimq::defaultTCPConfig.n_threads)),
       config_(ahrimq::http::defaultHTTPConfig) {
   InitHTTPServer();
@@ -70,11 +73,69 @@ void HTTPServer::OnStreamOpen(ReactorConn* conn) {
 void HTTPServer::OnStreamReached(ReactorConn* conn, bool allread) {
   std::string conn_name = conn->GetName();
   HTTPConnPtr httpconn = httpconns_[conn_name];
+StartParseRequestDatagramTag:
+  int retcode = ParseRequestDatagram(httpconn.get());
+  if (httpconn->CurrentResponseIsNull()) {
+    httpconn->CurrentResponseRef() = std::make_shared<HTTPResponse>();
+  }
+  if (retcode == StatusPrivateDone) {
+    // do request
+    httpconn->SetCurrentParsingStateLine();
+    DoRequest(httpconn.get());
+  } else {
+    // request datagram is abnormal, we need to do error handling
+    if (retcode == StatusPrivateInvalid) {
+      retcode = StatusBadRequest;
+    }
+    DoRequestError(httpconn.get(), retcode);
+  }
+  // TODO consider the situation where http request pipelining is needed
+  // support http request pipelining
+  
+  // send all response data out to client
+  httpconn->Send();
 }
 
-void HTTPServer::OnStreamClosed(ReactorConn* conn) {}
+void HTTPServer::OnStreamClosed(ReactorConn* conn) {
+  // TODO handle connection close
+}
 
-void HTTPServer::OnStreamWritten(ReactorConn* conn) {}
+void HTTPServer::OnStreamWritten(ReactorConn* conn) {
+  // FIXME may be this is not needed
+  // std::string conn_name = conn->GetName();
+  // HTTPConnPtr httpconn = httpconns_[conn_name];
+  // httpconn->CurrentRequestRef()->Reset();
+  // httpconn->CurrentResponseRef()->Reset();
+  // std::cout << "HTTPServer::OnStreamWritten, Request and Response reset\n";
+}
+
+void HTTPServer::DoRequest(HTTPConn* conn) {
+  HTTPRequestPtr& req = conn->CurrentRequestRef();
+  HTTPHeaderPtr& req_header = req->HeaderRef();
+  const URL& url = req->URLRef();
+  std::cout << "Requested url: " << url << std::endl;
+  // set http response data
+  HTTPResponsePtr& res = conn->CurrentResponseRef();
+  HTTPHeaderPtr& res_header = res->HeaderRef();
+  // TODO route tracing and call corresponding user-specific methods
+
+  // add response date
+  res->SetStatus(StatusOK);
+  res_header->Add("Date", GMTTimeNow());
+  // TODO: for debug purpose
+  std::string body = "{\"name\" : \"ryanreadbooks\"}";
+  size_t len = body.size();
+  res_header->Add("Content-Length", std::to_string(len));
+  res_header->Add("Content-Type", "application/json");
+  res->Organize(conn->GetWriteBuffer());
+  // TODO: for debug purpose
+  conn->GetWriteBuffer().Append(body);
+  req->Reset();
+}
+
+void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
+  
+}
 
 }  // namespace http
 }  // namespace ahrimq

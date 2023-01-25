@@ -97,7 +97,23 @@ std::string Buffer::ReadStringAndForwardTill(const char *delim) {
   }
   const char *begin_read = BeginReadIndex();
   size_t offset = it - it_begin;
-  ReaderIdxForward(offset + delim_len);
+  ReaderIdxForward(offset + delim_len); // skip delim
+  return std::string(begin_read, offset);
+}
+
+std::string Buffer::ReadStringAndForwardTill(const char *delim, bool& found) {
+  auto it_begin = data_.begin() + p_reader_;
+  auto it_end = data_.begin() + p_writer_;
+  size_t delim_len = strlen(delim);
+  auto it = std::search(it_begin, it_end, delim, delim + delim_len);
+  if (it == it_end) {
+    found = false;
+    return "";
+  }
+  const char *begin_read = BeginReadIndex();
+  size_t offset = it - it_begin;
+  ReaderIdxForward(offset + delim_len); // skip delim
+  found = true;
   return std::string(begin_read, offset);
 }
 

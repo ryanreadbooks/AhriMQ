@@ -160,6 +160,7 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
   } else {
     // TODO do more error checking
     // normal read
+    // FIXME: there exists a copy cost
     rbuf->Append(tmpbuf, n);
     if (ev_read_handler_ != nullptr) {
       ev_read_handler_(conn, rflag == READ_EOF_REACHED);
@@ -197,6 +198,10 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
       conn->SetMaskRead();
       conn->loop_->epoller->ModifyConn(conn);
       wbuf->Reset();
+      // TODO: is it reasonable to put write callback here
+      if (ev_write_handler_ != nullptr) {
+        ev_write_handler_(conn);
+      }
     } else {
       wbuf->ReaderIdxForward(nbytes);
     }

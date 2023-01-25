@@ -5,11 +5,15 @@
 #include <unordered_map>
 
 namespace ahrimq {
-
 namespace http {
 
-// define some status code in HTTP
+// define some status codes for internal usage when parsing http request
+constexpr static int StatusPrivateDone = 600;
+constexpr static int StatusPrivateComplete = 601;
+constexpr static int StatusPrivatePending = 602;
+constexpr static int StatusPrivateInvalid = 604;
 
+// define some status codes in HTTP
 constexpr static int StatusContinue = 100;
 constexpr static int StatusSwitchingProtocols = 101;
 
@@ -56,10 +60,11 @@ constexpr static int StatusServiceUnavailable = 503;
 constexpr static int StatusGatewayTimeout = 504;
 constexpr static int StatusHTTPVersionNotSupported = 505;
 
-const static std::unordered_map<int, std::string> StatusCodeStringMapping = {
+static std::unordered_map<int, std::string> StatusCodeStringMapping = {
+    // 1xx
     {StatusContinue, "Continue"},
     {StatusSwitchingProtocols, "Switching Protocols"},
-
+    // 2xx
     {StatusOK, "OK"},
     {StatusCreated, "Created"},
     {StatusAccepted, "Accepted"},
@@ -67,7 +72,7 @@ const static std::unordered_map<int, std::string> StatusCodeStringMapping = {
     {StatusNoContent, "No Content"},
     {StatusResetContent, "Reset Content"},
     {StatusPartialContent, "Partial Content"},
-
+    // 3xx
     {StatusMultipleChoices, "Multiple Choices"},
     {StatusMovedPermanently, "Moved Permanently"},
     {StatusFound, "Found"},
@@ -76,7 +81,7 @@ const static std::unordered_map<int, std::string> StatusCodeStringMapping = {
     {StatusUseProxy, "Use Proxy"},
     {StatusTemporaryRedirect, "Temporary Redirect"},
     {StatusPermanentRedirect, "Permanent Redirect"},
-
+    // 4xx
     {StatusBadRequest, "Bad Request"},
     {StatusUnauthorized, "Unauthorized"},
     {StatusPaymentRequired, "Payment Required"},
@@ -95,17 +100,15 @@ const static std::unordered_map<int, std::string> StatusCodeStringMapping = {
     {StatusUnsupportedMediaType, "Unsupported Media Type"},
     {StatusRangeNotSatisfiable, "Range Not Satisfiable"},
     {StatusExpectationFailed, "Expectation Failed"},
-
+    // 5xx
     {StatusInternalServerError, "Internal Server Error"},
     {StatusNotImplemented, "Not Implemented"},
     {StatusBadGateway, "Bad Gateway"},
     {StatusServiceUnavailable, "Service Unavailable"},
     {StatusGatewayTimeout, "Gateway Timeout"},
-    {StatusHTTPVersionNotSupported, "HTTP Version Not Supported"}
+    {StatusHTTPVersionNotSupported, "HTTP Version Not Supported"}};
 
-};
 }  // namespace http
-
 }  // namespace ahrimq
 
 #endif  // _HTTP_STATUS_H_

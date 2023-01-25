@@ -14,6 +14,13 @@ ahrimq_create_dependency(
     "tcp/tcp_server.cc"
     "http/http_conn.cc"
     "http/http_server.cc"
+    "http/http_header.cc"
+    "http/http_method.cc"
+    "http/http_parser.cc"
+    "http/http_request.cc"
+    "http/http_response.cc"
+    "http/http_version.cc"
+    "http/url.cc"
   INCS
     "addr.h"
     "epoller.h"
@@ -25,8 +32,17 @@ ahrimq_create_dependency(
     "tcp/tcp_server.h"
     "http/http_conn.h"
     "http/http_server.h"
+    "http/http_header.h"
+    "http/http_method.h"
+    "http/http_parser.h"
+    "http/http_request.h"
+    "http/http_response.h"
+    "http/http_version.h"
+    "http/url.h"
   LINKS
     pthread
+    ahrimq::base
+    ahrimq::buffer
 )
 
 ahrimq_add_cc_test(
@@ -47,4 +63,5 @@ ahrimq_add_cc_test(
   LINKS
     ahrimq::net
     ahrimq::buffer
+    ahrimq::base
 )

@@ -116,6 +116,7 @@ typedef std::shared_ptr<TCPServer> TCPServerPtr;
 typedef TCPServer::Config TCPServerConfig;
 typedef std::shared_ptr<TCPServer::Config> TCPServerConfigPtr;
 
+// must be static
 static TCPServer::Config defaultTCPConfig;
 
 }  // namespace ahrimq
