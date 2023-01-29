@@ -7,13 +7,18 @@
 namespace ahrimq {
 namespace http {
 
-// define some status codes for internal usage when parsing http request
+// Define some status codes for internal usage when parsing http request.
 constexpr static int StatusPrivateDone = 600;
 constexpr static int StatusPrivateComplete = 601;
 constexpr static int StatusPrivatePending = 602;
 constexpr static int StatusPrivateInvalid = 604;
 
-// define some status codes in HTTP
+#define STATUS_CODE_INTERNAL_USAGE 0
+#define STATUS_CODE_HTTP_STANDARD 1
+#define STATUS_CODE_INVALID 2
+
+// Define some status codes in HTTP
+// Note: not all the status codes below is supported by this software.
 constexpr static int StatusContinue = 100;
 constexpr static int StatusSwitchingProtocols = 101;
 
@@ -107,6 +112,28 @@ static std::unordered_map<int, std::string> StatusCodeStringMapping = {
     {StatusServiceUnavailable, "Service Unavailable"},
     {StatusGatewayTimeout, "Gateway Timeout"},
     {StatusHTTPVersionNotSupported, "HTTP Version Not Supported"}};
+
+/// @brief Identify the kind of status code.
+/// @param code the status code
+/// @return
+static int IdentifyStatusCode(int code) {
+  int r = code / 100;
+  if (r == 6) {
+    return STATUS_CODE_INTERNAL_USAGE;
+  } else if (r == 4 || r == 5) {
+    return STATUS_CODE_HTTP_STANDARD;
+  }
+  return STATUS_CODE_INVALID;
+}
+
+/// @brief Identify the status code to decide if closing the connection is needed.
+/// @param code
+/// @return
+static bool IdentifyStatusCodeNeedCloseConnection(int code) {
+  return code == StatusBadRequest || code == StatusMethodNotAllowed ||
+         code == StatusRequestTimeout || code == StatusInternalServerError ||
+         code == StatusHTTPVersionNotSupported;
+}
 
 }  // namespace http
 }  // namespace ahrimq

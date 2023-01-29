@@ -23,8 +23,8 @@
 
 namespace ahrimq {
 
-typedef std::function<void(ReactorConn* conn, bool)> ReactorReadEventHandler;
-typedef std::function<void(ReactorConn* conn)> ReactorGenericEventHandler;
+typedef std::function<void(ReactorConn* conn, bool, bool&)> ReactorReadEventHandler;
+typedef std::function<void(ReactorConn* conn, bool&)> ReactorGenericEventHandler;
 
 constexpr static int kNetReadBufSize = 65536;
 
@@ -38,6 +38,10 @@ class Reactor : public NoCopyable {
   void React();
 
   void Wait();
+
+  /// @brief Close given connection.
+  /// @param conn 
+  void CloseConn(ReactorConn* conn);
 
   uint32_t NumLoops() const {
     return num_loop_;

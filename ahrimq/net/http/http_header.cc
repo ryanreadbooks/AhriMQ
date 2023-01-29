@@ -1,5 +1,7 @@
 #include "net/http/http_header.h"
 
+#include <cstring>
+
 namespace ahrimq {
 namespace http {
 
@@ -62,6 +64,20 @@ void HTTPHeader::Clear() {
 
 bool HTTPHeader::Has(const std::string& key) const {
   return members_.count(key) != 0;
+}
+
+bool HTTPHeader::Equals(const std::string& key, const std::string& target) {
+  if (!Has(key)) {
+    return false;
+  }
+  return members_[key][0] == target;
+}
+
+bool HTTPHeader::Equals(const std::string& key, const char* target) {
+  if (!Has(key)) {
+    return false;
+  }
+  return members_[key][0] == target;
 }
 
 }  // namespace http

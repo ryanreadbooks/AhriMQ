@@ -57,6 +57,19 @@ void Reactor::Wait() {
   }
 }
 
+void Reactor::CloseConn(ReactorConn* conn) {
+  if (conn != nullptr) {
+    // conn->loop_->epoller->DetachConn(conn); // already done in
+    // ReactorConn::~ReactorConn
+    conn->read_buf_->Reset();
+    conn->write_buf_->Reset();
+    // close(conn->fd_);  // // already done in ReactorConn::~ReactorConn
+    conns_.erase(conn->name_);
+    // FIXME reuse connection instances: if we actually reuse the connection
+    // instance, we need to close(fd) and DetachConn(conn) manually
+  }
+}
+
 bool Reactor::InitEventLoops() {
   eventloops_.reserve((size_t)num_loop_);
   for (size_t i = 0; i < num_loop_; i++) {
@@ -120,7 +133,8 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
       // attach new session into epoll
       if (ev_accept_handler_ != nullptr) {
         // in accept handler, we should set conn's read_buf and write_buf pointer
-        ev_accept_handler_(conn.get());
+        bool close_after = false;
+        ev_accept_handler_(conn.get(), close_after);
       }
       if (selected_loop->epoller->AttachConn(conn.get())) {
         conn->watched_ = true;
@@ -149,11 +163,9 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
   if (n == 0 && rflag == READ_SOCKET_CLOSED) {
     // connection closed
     if (ev_close_handler_ != nullptr) {
-      ev_close_handler_(conn);
-      close(fd);
-      rbuf->Reset();
-      // FIXME reuse TCPConn instance
-      conns_.erase(conn->name_);
+      bool close_after = false;
+      ev_close_handler_(conn, close_after);
+      CloseConn(conn);
       closed = true;
       return;
     }
@@ -163,7 +175,11 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
     // FIXME: there exists a copy cost
     rbuf->Append(tmpbuf, n);
     if (ev_read_handler_ != nullptr) {
-      ev_read_handler_(conn, rflag == READ_EOF_REACHED);
+      bool close_after = false;
+      ev_read_handler_(conn, rflag == READ_EOF_REACHED, close_after);
+      if (close_after) {
+        CloseConn(conn);
+      }
     }
     if (conn->write_buf_->Size() > 0) {
       conn->SetMaskWrite();
@@ -198,19 +214,20 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
       conn->SetMaskRead();
       conn->loop_->epoller->ModifyConn(conn);
       wbuf->Reset();
-      // TODO: is it reasonable to put write callback here
+      // TODO: is it reasonable to put write callback here?
       if (ev_write_handler_ != nullptr) {
-        ev_write_handler_(conn);
+        bool close_after = false;
+        ev_write_handler_(conn, close_after);
+        if (close_after) {
+          CloseConn(conn);
+        }
       }
     } else {
       wbuf->ReaderIdxForward(nbytes);
     }
   }
   if (nbytes == 0 && wbuf->Size() != 0) {
-    conn->watched_ = false;
-    wbuf->Reset();
-    close(fd);
-    conns_.erase(conn->name_);
+    CloseConn(conn);
     closed = true;
   }
 }

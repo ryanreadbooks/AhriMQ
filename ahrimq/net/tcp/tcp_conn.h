@@ -166,7 +166,7 @@ class TCPConn : public NoCopyable {
   // write buffer
   Buffer write_buf_;
 
-  // corresponding conn
+  // corresponding conn, not owned
   ReactorConn* conn_;
 
   // connection status

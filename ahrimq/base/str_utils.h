@@ -9,6 +9,8 @@ namespace ahrimq {
 
 std::vector<std::string> StrSplit(const std::string &str, char delim);
 
+void StrSplit(const std::string &str, char delim, std::vector<std::string>& out);
+
 void StrInplaceToUpper(std::string &str);
 
 void StrInplaceToLower(std::string &str);

@@ -26,7 +26,6 @@ void EventLoop::Loop() {
     int timeout_ms = -1;
     int ready = epoller->Wait(timeout_ms);
     // process events one by one
-    // std::cout << "ready = " << ready << std::endl;
     debug_n += ready;
     for (int i = 0; ready != -1 && i < ready; ++i) {
       uint32_t fired_events = epoller->GetEpollEvents()[i].events;

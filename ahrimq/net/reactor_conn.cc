@@ -16,5 +16,8 @@ ReactorConn::~ReactorConn() {
   write_buf_ = nullptr;
   watched_ = false;
   close(fd_);
+  if (loop_ != nullptr && loop_->epoller != nullptr) {
+    loop_->epoller->DetachConn(this);
+  }
 }
 }  // namespace ahrimq

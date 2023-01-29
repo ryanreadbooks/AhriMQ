@@ -24,7 +24,7 @@ struct IOReadWriteStatus {
 };
 
 /// @brief Read all bytes from non-blocked fd to buf till fd's read buffer is
-/// exhausted(EAGAIN | EWOULDBLOCK)
+/// exhausted(EAGAIN | EWOULDBLOCK).
 /// @param fd file descriptor to read from
 /// @param buf ahrimq::Buffer to read to
 /// @return status indicating result
@@ -54,36 +54,36 @@ class TCPServer : public NoCopyable, public IServer {
   };
 
  public:
-  /// @brief construct a TCPServer with default configs
+  /// @brief Construct a TCPServer with default configs.
   TCPServer();
 
-  /// @brief construct a TCPServer
+  /// @brief Construct a TCPServer.
   /// @param config TCPServerConfig instance
   TCPServer(const TCPServer::Config& config);
 
-  /// @brief construct a TCPServer with message callback
+  /// @brief Construct a TCPServer with message callback.
   /// @param config TCPServerConfig instance
   /// @param on_message_cb on message coming in callback function
   TCPServer(const TCPServer::Config& config, TCPMessageCallback on_message_cb);
 
   ~TCPServer();
 
-  /// @brief set on message callback
+  /// @brief Set on message callback.
   /// @param cb callback function
   void SetOnMessageCallback(TCPMessageCallback cb) {
     on_message_cb_ = std::move(cb);
   }
 
-  /// @brief set connection closed callback function
+  /// @brief Set connection closed callback function.
   /// @param cb
   void SetOnClosedCallback(TCPGenericCallback cb) {
     on_closed_cb_ = std::move(cb);
   }
 
-  /// @brief start the server
+  /// @brief Start the server.
   void Run() override;
 
-  /// @brief stop the server
+  /// @brief Stop the server.
   // TODO implement it
   void Stop() override;
 
@@ -92,13 +92,13 @@ class TCPServer : public NoCopyable, public IServer {
 
   void InitTCPServer();
 
-  void OnStreamOpen(ReactorConn* conn) override;
+  void OnStreamOpen(ReactorConn* conn, bool& close_after) override;
 
-  void OnStreamClosed(ReactorConn* conn) override;
+  void OnStreamClosed(ReactorConn* conn, bool& close_after) override;
 
-  void OnStreamReached(ReactorConn* conn, bool allread) override;
+  void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) override;
 
-  void OnStreamWritten(ReactorConn* conn) override;
+  void OnStreamWritten(ReactorConn* conn, bool& close_after) override;
 
  private:
   // ReactorPtr reactor_;

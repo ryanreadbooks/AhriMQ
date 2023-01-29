@@ -7,11 +7,14 @@ HTTPConn::HTTPConn(ReactorConn* conn)
     : TCPConn(conn),
       current_parsing_state_(RequestParsingState::RequestLine),
       current_line_state_(LineParsingState::LineComplete) {
-  current_request_ = std::make_shared<HTTPRequest>();
-  request_inited_ = true;
+  current_request_ = std::make_shared<HTTPRequest>(&read_buf_);
+  current_response_ = std::make_shared<HTTPResponse>(&write_buf_);
 }
 
-HTTPConn::~HTTPConn() {}
+HTTPConn::~HTTPConn() {
+  current_request_.reset();
+  current_response_.reset();
+}
 
 }  // namespace http
 }  // namespace ahrimq

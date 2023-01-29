@@ -20,12 +20,8 @@ enum class LineParsingState;
 
 const static char* kCRLF = "\r\n";
 
-/// @brief this enum class represents the operation result after parsing
-enum class ParsingResCode {
-  Complete,
-  Pending,
-  Invalid
-};
+/// @brief This enum class represents the operation result after parsing.
+enum class ParsingResCode { Complete, Pending, Invalid };
 
 LineParsingState ParseSingleLine(HTTPConn* conn, std::string& line);
 
@@ -37,6 +33,11 @@ int ParseRequestEmptyLine(HTTPConn* conn);
 
 int ParseRequestBody(HTTPConn* conn);
 
+/// @brief Parse a http request stream.
+/// @param conn the http connection response
+/// @return the parsing result code: possible result codes are : 6xx(for private
+/// internal usage), 4xx(standard http response code), 5xx(standard http response
+/// code)
 int ParseRequestDatagram(HTTPConn* conn);
 
 }  // namespace http

@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "buffer/buffer.h"
 #include "net/http/http_header.h"
 #include "net/http/http_method.h"
 #include "net/http/http_version.h"
@@ -14,7 +15,7 @@ namespace http {
 
 class HTTPRequest {
  public:
-  HTTPRequest();
+  HTTPRequest(Buffer* rbuf);
 
   ~HTTPRequest() = default;
 
@@ -66,13 +67,26 @@ class HTTPRequest {
     return version_;
   }
 
+  /// @brief Reset the http request instance, including http header, method, body,
+  /// etc.
   void Reset();
+
+  /// @brief Get http request body.
+  /// @return the pointer to the Buffer which contains request body content.
+  Buffer* Body() const {
+    return body_;
+  }
+
+  const URL::Query& Query() const {
+    return url_.GetQuery();
+  }
 
  private:
   HTTPHeaderPtr header_;
   HTTPMethod method_;
   int version_;
   URL url_;
+  Buffer* body_;
 };
 
 typedef std::shared_ptr<HTTPRequest> HTTPRequestPtr;

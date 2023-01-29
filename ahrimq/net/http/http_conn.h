@@ -14,7 +14,7 @@ enum class LineParsingState;
 class HTTPServer;
 class HTTPConn;
 
-/// @brief indicates the current state when parsing http request datagram, current
+/// @brief RequestParsingState Indicates the current state when parsing http request datagram, current
 /// state means expected data to see next
 ///   Invalid: Request parsing enounters error
 ///
@@ -38,7 +38,7 @@ enum class RequestParsingState {
   Done
 };
 
-/// @brief this enum class indicates the line parsing status
+/// @brief This enum class indicates the line parsing status.
 enum class LineParsingState {
   LineComplete,
   LinePending,
@@ -46,17 +46,19 @@ enum class LineParsingState {
   LineCompleteEmptyLine
 };
 
-/// @brief HTTPConn represents a http connection over tcp connection
+/// @brief HTTPConn represents a http connection over tcp connection.
 class HTTPConn : public TCPConn {
   friend class HTTPServer;
 
  public:
-  /// @brief construct a http connection instance
+  /// @brief Construct a http connection instance.
   /// @param conn
   explicit HTTPConn(ReactorConn* conn);
 
   ~HTTPConn();
 
+  /// @brief Set current http request parsing state to target state.
+  /// @param state target state
   void SetCurrentParsingState(RequestParsingState state) {
     current_parsing_state_ = state;
   }
@@ -89,25 +91,25 @@ class HTTPConn : public TCPConn {
     return current_parsing_state_;
   }
 
-  /// @brief return a copy of current http request shared pointer
+  /// @brief Return a copy of current http request shared pointer.
   /// @return
   HTTPRequestPtr GetCurrentRequest() const {
     return current_request_;
   }
 
-  /// @brief return the reference of current http request
+  /// @brief Return the reference of current http request.
   /// @return
   HTTPRequestPtr& CurrentRequestRef() {
     return current_request_;
   }
 
-  /// @brief return a copy of current http response shared pointer
+  /// @brief Return a copy of current http response shared pointer.
   /// @return
   HTTPResponsePtr GetCurrentResponse() const {
     return current_response_;
   }
 
-  /// @brief return the reference of current http request
+  /// @brief Return the reference of current http request.
   /// @return
   HTTPResponsePtr& CurrentResponseRef() {
     return current_response_;
@@ -130,8 +132,6 @@ class HTTPConn : public TCPConn {
   HTTPRequestPtr current_request_;
   // current HTTP response
   HTTPResponsePtr current_response_;
-  // request instance inited
-  bool request_inited_;
 };
 
 typedef std::shared_ptr<HTTPConn> HTTPConnPtr;

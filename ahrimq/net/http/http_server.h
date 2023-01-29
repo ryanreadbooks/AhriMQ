@@ -4,12 +4,12 @@
 #include <memory>
 
 #include "base/nocopyable.h"
+#include "net/http/http_conn.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
 #include "net/iserver.h"
 #include "net/reactor_conn.h"
 #include "net/tcp/tcp_server.h"
-#include "net/http/http_conn.h"
 
 namespace ahrimq {
 namespace http {
@@ -17,7 +17,10 @@ namespace http {
 #define DEFAULT_HTTP_SERVER_IP "127.0.0.1"
 #define DEFAULT_HTTP_PORT 80
 
-typedef std::function<void(const HTTPRequest&, HTTPResponsePtr)> HTTPCallback;
+/// @brief HTTPCallback is the callback function for handling http request.
+/// HTTPCallback will take http request instance const reference and http response
+/// instance as arguments and should return a page name as response page.
+typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)> HTTPCallback;
 
 /// @brief HTTPServer implements a minimum HTTP/1.1 server
 class HTTPServer : public NoCopyable, public IServer {
@@ -25,25 +28,19 @@ class HTTPServer : public NoCopyable, public IServer {
   /// @brief HTTP Server configuration
   class Config : public ahrimq::TCPServer::Config {
    public:
-    // HTTP keepalive option
-    bool http_keepalive;
+    // http server root path
+    std::string root;
     // indicate HTTPS
     bool _http_secure;  // (reserved)
   };
 
  public:
-  /// @brief construct a HTTP server
+  /// @brief Construct a HTTP server.
   HTTPServer();
 
-  /// @brief construct a HTTP server with given configuration
+  /// @brief Construct a HTTP server with given configuration.
   /// @param config
   HTTPServer(const HTTPServer::Config& config);
-
-  /// @brief construct a HTTP server with given configuration and HTTP callback
-  /// function
-  /// @param config
-  /// @param cb
-  HTTPServer(const HTTPServer::Config& config, HTTPCallback cb);
 
   ~HTTPServer();
 
@@ -56,28 +53,28 @@ class HTTPServer : public NoCopyable, public IServer {
 
   void InitHTTPServer();
 
-  void OnStreamOpen(ReactorConn* conn) override;
+  void OnStreamOpen(ReactorConn* conn, bool& close_after) override;
 
-  void OnStreamReached(ReactorConn* conn, bool allread) override;
+  void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) override;
 
-  void OnStreamClosed(ReactorConn* conn) override;
+  void OnStreamClosed(ReactorConn* conn, bool& close_after) override;
 
-  void OnStreamWritten(ReactorConn* conn) override;
+  void OnStreamWritten(ReactorConn* conn, bool& close_after) override;
 
-  /// @brief handle one single http request, and organize http response
-  /// @param conn 
+  /// @brief Handle one single http request, and organize http response.
+  /// @param conn
   void DoRequest(HTTPConn* conn);
 
-  /// @brief 
-  /// @param conn 
-  /// @param errcode 
+  /// @brief Handle one single http invalid request and organize http response.
+  /// @param conn
+  /// @param errcode
   void DoRequestError(HTTPConn* conn, int errcode);
+
+  void DoRouting(HTTPConn* conn);
 
  private:
   // HTTP config
   HTTPServer::Config config_;
-  // HTTP Callback
-  HTTPCallback on_request_cb_;
   // all HTTP connections
   std::unordered_map<std::string, HTTPConnPtr> httpconns_;
 };

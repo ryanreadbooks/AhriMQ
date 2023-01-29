@@ -20,6 +20,20 @@ std::vector<std::string> StrSplit(const std::string& str, char delim) {
   return splits;
 }
 
+void StrSplit(const std::string& str, char delim, std::vector<std::string>& out) {
+  if (str.empty()) {
+    return;
+  }
+  std::stringstream ss(str);
+  std::string tmp;
+  out.clear();
+  while (std::getline(ss, tmp, delim)) {
+    if (!tmp.empty()) {
+      out.emplace_back(tmp);
+    }
+  }
+}
+
 void StrInplaceToUpper(std::string& str) {
   std::transform(str.cbegin(), str.cend(), str.begin(),
                  [](unsigned char c) { return std::toupper(c); });

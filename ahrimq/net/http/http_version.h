@@ -16,12 +16,12 @@ constexpr static int Version1_1 = 0x11;
 const static char* Version1_0_Str = "HTTP/1.0";
 const static char* Version1_1_Str = "HTTP/1.1";
 
-/// @brief parse string to http version hex integer 
+/// @brief Parse string to http version hex integer .
 /// @param version 
 /// @return 
 int ParseHTTPVersion(const std::string& version);
 
-/// @brief check if given http version is supported
+/// @brief Check if given http version is supported.
 /// @param version 
 /// @return 
 bool HTTPVersionSupported(const std::string& version);

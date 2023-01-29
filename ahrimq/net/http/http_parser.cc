@@ -59,7 +59,6 @@ int ParseRequestLine(HTTPConn* conn) {
   req_ref->SetMethod(request_method);
 
   // url
-  // TODO do we need to check request url
   const std::string& request_url = v[1];
   req_ref->SetURL(request_url);
 
@@ -92,6 +91,7 @@ int ParseRequestHeader(HTTPConn* conn) {
       std::string field_key = std::string(field.begin(), where_is_colon);
       std::string field_value = std::string(where_is_colon + 1, field.end());
       field_value = StrTrimLeft(field_value);
+      // FIXME field-value may be a list whose elements are seperate by comma(,)
       header_ref->Add(field_key, field_value);
       // continue to parse next field
       continue;
@@ -202,10 +202,12 @@ int ParseRequestDatagram(HTTPConn* conn) {
         //  1. clear up invalid buffer
         //  2. close client connection if needed;
         std::cout << "case RequestParsingState::Invalid\n";
+        retcode = StatusPrivateInvalid;
         break;
       }
       case RequestParsingState::Done: {
-        std::cout << "case RequestParsingState::Done\n";
+        // reset the procedure state for the next request parsing
+        conn->SetCurrentParsingStateLine();
         retcode = StatusPrivateDone;
         break;
       }
@@ -215,7 +217,6 @@ int ParseRequestDatagram(HTTPConn* conn) {
       }
     }
   }
-  // TODO
   return retcode;
 }
 

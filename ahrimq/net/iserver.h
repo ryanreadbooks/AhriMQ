@@ -23,14 +23,14 @@ class IServer {
   virtual void Stop() = 0;
 
  protected:
-  virtual void OnStreamOpen(ReactorConn* conn) = 0;
+  virtual void OnStreamOpen(ReactorConn* conn, bool& close_after) = 0;
 
-  virtual void OnStreamClosed(ReactorConn* conn) = 0;
+  virtual void OnStreamClosed(ReactorConn* conn, bool& close_after) = 0;
 
-  virtual void OnStreamReached(ReactorConn* conn, bool allread) = 0;
+  virtual void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) = 0;
 
   // FIXME maybe this is not needed
-  virtual void OnStreamWritten(ReactorConn* conn) = 0;
+  virtual void OnStreamWritten(ReactorConn* conn, bool& close_after) = 0;
 
  protected:
   virtual void InitReactorHandlers() = 0;

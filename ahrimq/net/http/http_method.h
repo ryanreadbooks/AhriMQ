@@ -22,7 +22,7 @@ const static char* MethodConnect = "CONNECT";
 const static char* MethodOptions = "OPTIONS";
 const static char* MethodTrace = "TRACE";
 
-/// @brief supported http method
+/// @brief Supported http method.
 enum class HTTPMethod {
   Get,
   Head,
@@ -49,7 +49,7 @@ static std::unordered_map<std::string, HTTPMethod> httpStringMethodMapping{
     {MethodConnect, HTTPMethod::Connect}, {MethodOptions, HTTPMethod::Options},
     {MethodTrace, HTTPMethod::Trace}};
 
-/// @brief check if given http method string is supported
+/// @brief Check if given http method string is supported.
 /// @param method
 /// @return
 bool HTTPMethodSupported(const std::string& method);

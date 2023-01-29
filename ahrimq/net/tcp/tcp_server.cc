@@ -2,6 +2,7 @@
 
 using std::placeholders::_1;  // _1, _2, ...
 using std::placeholders::_2;
+using std::placeholders::_3;
 
 namespace ahrimq {
 
@@ -74,11 +75,11 @@ void TCPServer::Run() {
 void TCPServer::Stop() {}
 
 void TCPServer::InitReactorHandlers() {
-  reactor_->SetEventAcceptHandler(std::bind(&TCPServer::OnStreamOpen, this, _1));
+  reactor_->SetEventAcceptHandler(std::bind(&TCPServer::OnStreamOpen, this, _1, _2));
   reactor_->SetEventReadHandler(
-      std::bind(&TCPServer::OnStreamReached, this, _1, _2));
-  reactor_->SetEventCloseHandler(std::bind(&TCPServer::OnStreamClosed, this, _1));
-  reactor_->SetEventWriteHandler(std::bind(&TCPServer::OnStreamWritten, this, _1));
+      std::bind(&TCPServer::OnStreamReached, this, _1, _2, _3));
+  reactor_->SetEventCloseHandler(std::bind(&TCPServer::OnStreamClosed, this, _1, _2));
+  reactor_->SetEventWriteHandler(std::bind(&TCPServer::OnStreamWritten, this, _1, _2));
 }
 
 void TCPServer::InitTCPServer() {
@@ -90,7 +91,7 @@ void TCPServer::InitTCPServer() {
 
 // create TCPConn instance when this function is called
 // this function may be invoked in multiple threads?
-void TCPServer::OnStreamOpen(ReactorConn* conn) {
+void TCPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   TCPConnPtr tcpconn = std::make_shared<TCPConn>(conn);
   tcpconn->SetTCPNoDelay(config_.tcp_nodelay);
   tcpconn->SetTCPKeepAlive(config_.tcp_keepalive);
@@ -105,7 +106,7 @@ void TCPServer::OnStreamOpen(ReactorConn* conn) {
 }
 
 // this function may be invoked in multiple threads?
-void TCPServer::OnStreamClosed(ReactorConn* conn) {
+void TCPServer::OnStreamClosed(ReactorConn* conn, bool& close_after) {
   std::string conn_name = conn->GetName();
   mtx_.lock();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
@@ -121,7 +122,7 @@ void TCPServer::OnStreamClosed(ReactorConn* conn) {
 
 // we collect all bytes from fd buffer and invoke on_message_callback_
 // this function may be invoked in multiple threads?
-void TCPServer::OnStreamReached(ReactorConn* conn, bool allread) {
+void TCPServer::OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) {
   std::string conn_name = conn->GetName();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
   if (on_message_cb_ != nullptr) {
@@ -132,6 +133,6 @@ void TCPServer::OnStreamReached(ReactorConn* conn, bool allread) {
 }
 
 // this function may be invoked in multiple threads?
-void TCPServer::OnStreamWritten(ReactorConn* conn) {}
+void TCPServer::OnStreamWritten(ReactorConn* conn, bool& close_after) {}
 
 }  // namespace ahrimq

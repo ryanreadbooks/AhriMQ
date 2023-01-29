@@ -15,7 +15,7 @@ static const char *CRLF = "\r\n";
 /// @brief Buffer defines a char buffer that grows automatically.
 class Buffer : public NoCopyable {
  public:
-  /// @brief construct a new Buffer object
+  /// @brief Construct a new Buffer object.
   /// @param init_bufsize initial size of new buffer
   explicit Buffer(size_t init_bufsize = 64)
       : data_(init_bufsize), p_reader_(0), p_writer_(0) {}
@@ -24,14 +24,14 @@ class Buffer : public NoCopyable {
     data_.clear();
   }
 
-  /// @brief get the capacity of buffer
+  /// @brief Get the capacity of buffer.
   /// @return
   inline size_t Capacity() const {
     return data_.capacity();
   }
 
   /**
-   * @brief get the index of reader
+   * @brief Get the index of reader.
    *
    * @return size_t
    */
@@ -39,164 +39,164 @@ class Buffer : public NoCopyable {
     return p_reader_;
   }
 
-  /// @brief get the writer index
+  /// @brief Get the writer index.
   /// @return
   inline size_t BeginWrite() const {
     return p_writer_;
   }
 
-  /// @brief get the number of writable bytes
+  /// @brief Get the number of writable bytes.
   /// @return
   inline size_t WritableBytes() const {
     return Capacity() - p_writer_;
   }
 
-  /// @brief get the number of readable bytes
+  /// @brief Get the number of readable bytes.
   /// @return
   inline size_t ReadableBytes() const {
     return p_writer_ - p_reader_;
   }
 
-  /// @brief return the size of buffer(readable bytes), this method is recommended,
-  /// because its name is more comprehensible
+  /// @brief Return the size of buffer(readable bytes), this method is recommended,
+  /// because its name is more comprehensible.
   /// @return
   inline size_t Size() const {
     return ReadableBytes();
   }
 
-  /// @brief get the number of prependable bytes
+  /// @brief Get the number of prependable bytes.
   /// @return
   inline size_t PrependableBytes() const {
     return p_reader_;
   }
 
-  /// @brief get the pointer of array underneath buffer
+  /// @brief Get the pointer of array underneath buffer.
   /// @return
   inline char *BufferFront() {
     return &data_[0];
   }
 
-  /// @brief return readable bytes as std::string
+  /// @brief Return readable bytes as std::string.
   /// @return
   std::string ReadableAsString() const {
     return std::string(data_.data() + p_reader_, ReadableBytes());
   }
 
-  /// @brief get the pointer of the begin of readable bytes
+  /// @brief Get the pointer of the begin of readable bytes.
   /// @return
   inline char *BeginReadIndex() {
     return data_.data() + p_reader_;
   }
 
-  /// @brief get the pointer of the begin of writable bytes
+  /// @brief Get the pointer of the begin of writable bytes.
   /// @return
   inline char *BeginWriteIndex() {
     return data_.data() + p_writer_;
   }
 
-  /// @brief append more value into buffer
+  /// @brief Append more value into buffer.
   /// @param value
   void Append(const std::string &value);
 
-  /// @brief append more value into buffer
+  /// @brief Append more value into buffer.
   /// @param value
   /// @param len
   void Append(const char *value, int len);
 
-  /// @brief return the index of CRLF in readable bytes
+  /// @brief Return the index of CRLF in readable bytes.
   /// @return
   int FindCRLFInReadable();
 
-  /// @brief reset the buffer
+  /// @brief Reset the buffer.
   void Reset();
 
-  /// @brief move reader pointer to the right
+  /// @brief Move reader pointer to the right.
   /// @param len
   void ReaderIdxForward(size_t len);
 
-  /// @brief move reader pointer to the left
+  /// @brief Move reader pointer to the left.
   /// @param len
   void ReaderIdxBackward(size_t len);
 
-  /// @brief move writer pointer to the right
+  /// @brief Move writer pointer to the right.
   /// @param len 
   void WriterIdxForward(size_t len);
 
-  /// @brief move writer pointer to the left
+  /// @brief Move writer pointer to the left.
   /// @param len 
   void WriterIdxBackward(size_t len);
 
-  /// @brief return a string
+  /// @brief Return a string.
   /// @param len
   /// @return
   std::string ReadStringAndForward(size_t len);
 
-  /// @brief read a string from buffer
+  /// @brief Read a string from buffer.
   /// @param len
   /// @return
   std::string ReadString(size_t len);
 
-  /// @brief read string starting from index
+  /// @brief Read string starting from index.
   /// @param index
   /// @param len
   /// @return
   std::string ReadStringFrom(size_t index, size_t len);
 
-  /// @brief get the char at index in readable bytes
+  /// @brief Get the char at index in readable bytes.
   /// @param index
   /// @return
   char ReadableCharacterAt(size_t index) const;
 
-  /// @brief read string from buffer and forward the pointer till delim
+  /// @brief Read string from buffer and forward the pointer till delim.
   /// @param delim
   /// @return
   std::string ReadStringAndForwardTill(const char *delim = "\r\n");
 
-  /// @brief read string from buffer and forward the pointer till delim
+  /// @brief Read string from buffer and forward the pointer till delim.
   /// @param delim the delimitor
   /// @param found output arg, if delim is found in buffer
   /// @return 
   std::string ReadStringAndForwardTill(const char *delim, bool& found);
 
-  /// @brief consume all bytes in readable
+  /// @brief Consume all bytes in readable.
   /// @return
   std::vector<char> ReadAll();
 
-  /// @brief read a long integer from buffer and forward the pointer
+  /// @brief Read a long integer from buffer and forward the pointer.
   /// @param step
   /// @return
   long ReadLongAndForward(size_t &step);
 
-  /// @brief read a long integer but do not forward a pointer
+  /// @brief Read a long integer but do not forward a pointer.
   /// @param step
   /// @return
   long ReadLong(size_t &step);
 
-  /// @brief read a long starting from index
+  /// @brief Read a long starting from index.
   /// @param index
   /// @param step
   /// @return
   long ReadLongFrom(size_t index, size_t &step);
 
-  /// @brief stream buffer to output file
+  /// @brief Stream buffer to output file.
   /// @param file
   void ToFile(const std::string &file);
 
-  /// @brief remove '\t', '\n', '\r', ' ' on the left side
+  /// @brief Remove '\t', '\n', '\r', ' ' on the left side.
   void TrimLeft();
 
-  /// @brief remove '\t', '\n', '\r', ' ' on the right side
+  /// @brief Remove '\t', '\n', '\r', ' ' on the right side.
   void TrimRight();
 
-  /// @brief remove '\t', '\n', '\r', ' ' on both side
+  /// @brief Remove '\t', '\n', '\r', ' ' on both side.
   void TrimLeftRight();
 
  private:
-  /// @brief make sure there is enough room
+  /// @brief Make sure there is enough room.
   /// @param n
   void EnsureBytesForWrite(size_t n);
 
-  /// @brief move readable bytes to the head of buffer
+  /// @brief Move readable bytes to the head of buffer.
   void MoveReadableToHead();
 
  private:

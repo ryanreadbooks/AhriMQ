@@ -17,7 +17,7 @@ void Buffer::Append(const char *value, int len) {
 }
 
 void Buffer::Reset() {
-  memset(data_.data(), 0, data_.capacity());
+  memset(data_.data(), 0, data_.capacity());  // is this necessary?
   p_reader_ = 0;
   p_writer_ = 0;
 }
