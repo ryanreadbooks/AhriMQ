@@ -23,17 +23,28 @@ class HTTPResponse {
     return header_;
   }
 
-  void AddHeader(std::string key, std::string value);
+  /// @brief Add key-value into response header.
+  /// @param key
+  /// @param value
+  void AddHeader(const std::string& key, const std::string& value);
 
-  void SetHeader(std::string key, std::string value);
+  /// @brief Set key-value into response header.
+  /// @param key
+  /// @param value
+  void SetHeader(const std::string& key, const std::string& value);
 
+  /// @brief Check if header contains given key.
+  /// @param key
+  /// @return
   bool HeaderContains(const std::string& key);
 
+  /// @brief Return response status code.
+  /// @return
   int Status() const {
     return status_;
   }
 
-  /// @brief Set the returned response status.
+  /// @brief Set the response status code.
   /// @param status
   void SetStatus(int status);
 
@@ -57,13 +68,27 @@ class HTTPResponse {
 
   // FIXME we should use enum class to specify content type
   /// @brief Set response content-type.
-  /// @param content_type 
+  /// @param content_type
   void SetContentType(const std::string& content_type);
 
   // FIXME we should use enum class to specify character encoding
   /// @brief Set response character encoding.
-  /// @param encoding 
-  void SetCharacterEncoding(const std::string& encoding);
+  /// @param encoding
+  void SetContentEncoding(const std::string& encoding);
+
+  /// @brief Convenient function to add plain text response body.
+  /// @param text
+  void MakeContentPlainText(const std::string& text);
+
+  /// @brief Convenient function to add json content to response body.
+  /// @param json
+  void MakeContentJson(const std::string& json);
+
+  /// @brief Set response redirect.
+  /// @param url redirected url
+  /// @param code redirected status code like 3xx
+  void Redirect(const std::string& url, int code);
+  // TODO implement file and multipart response body
 
  private:
   // response status code

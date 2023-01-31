@@ -44,6 +44,14 @@ void HTTPServer::InitReactorHandlers() {
       std::bind(&HTTPServer::OnStreamWritten, this, _1, _2));
 }
 
+bool HTTPServer::Get(const std::string& pattern, const HTTPCallback& callback) {
+  return false;
+}
+
+bool HTTPServer::Post(const std::string& pattern, const HTTPCallback& callback) {
+  return false;
+}
+
 void HTTPServer::InitHTTPServer() {
   assert(reactor_ != nullptr);  // FIXME: optimize error handling
   InitReactorHandlers();
@@ -166,10 +174,14 @@ void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
   if (IdentifyStatusCodeNeedCloseConnection(final_status_code)) {
     res_header->Add("Connection", "close");
   }
+  // TODO do we need to add response body
 }
 
 // TODO route tracing and call corresponding user-specific methods
-void HTTPServer::DoRouting(HTTPConn* conn) {}
+void HTTPServer::DoRouting(HTTPConn* conn) {
+  std::string path = conn->CurrentRequestRef()->URLRef().StringNoQuery();
+  // use http router to decide which handler callback function should be invoked.
+}
 
 }  // namespace http
 }  // namespace ahrimq

@@ -11,3 +11,12 @@ ahrimq_create_dependency(
     "time_utils.h"
     "nocopyable.h"
 )
+
+ahrimq_add_cc_test(
+  NAME
+    str_utils_test
+  SRCS
+    "str_utils_test.cc"
+  LINKS
+    ahrimq::base
+)

@@ -4,6 +4,7 @@
 int main(int argc, char** argv) {
   ahrimq::http::HTTPServerConfig config;
   config.port = 9527;
+  config.root = "/";
 
   ahrimq::http::HTTPServer server(config);
 

@@ -7,6 +7,7 @@
 #include "net/http/http_conn.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
+#include "net/http/http_router.h"
 #include "net/iserver.h"
 #include "net/reactor_conn.h"
 #include "net/tcp/tcp_server.h"
@@ -20,7 +21,7 @@ namespace http {
 /// @brief HTTPCallback is the callback function for handling http request.
 /// HTTPCallback will take http request instance const reference and http response
 /// instance as arguments and should return a page name as response page.
-typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)> HTTPCallback;
+// typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)> HTTPCallback;
 
 /// @brief HTTPServer implements a minimum HTTP/1.1 server
 class HTTPServer : public NoCopyable, public IServer {
@@ -44,9 +45,25 @@ class HTTPServer : public NoCopyable, public IServer {
 
   ~HTTPServer();
 
+  /// @brief Start the server.
   void Run() override;
 
+  /// @brief Stop the server.
   void Stop() override;
+
+  /// @brief Add callback function for http GET method on given url pattern.
+  /// @param pattern url pattern
+  /// @param callback the callback function to handle url pattern
+  /// @return true on success, false on failure(already exists callback fucntion on
+  /// pattern)
+  bool Get(const std::string& pattern, const HTTPCallback& callback);
+
+  /// @brief Add callback function for http POST method on given url pattern.
+  /// @param pattern url pattern
+  /// @param callback the callback function to handle url pattern
+  /// @return true on success, false on failure(already exists callback fucntion on
+  /// pattern)
+  bool Post(const std::string& pattern, const HTTPCallback& callback);
 
  protected:
   void InitReactorHandlers() override;

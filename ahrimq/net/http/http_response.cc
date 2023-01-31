@@ -11,12 +11,12 @@ HTTPResponse::HTTPResponse(Buffer* wbuf)
   header_->Add("Server", "AhriMQ/1.0");
 }
 
-void HTTPResponse::AddHeader(std::string key, std::string value) {
-  header_->Add(std::move(key), std::move(key));
+void HTTPResponse::AddHeader(const std::string& key, const std::string& value) {
+  header_->Add(key, value);
 }
 
-void HTTPResponse::SetHeader(std::string key, std::string value) {
-  header_->Set(std::move(key), std::move(key));
+void HTTPResponse::SetHeader(const std::string& key, const std::string& value) {
+  header_->Set(key, value);
 }
 
 bool HTTPResponse::HeaderContains(const std::string& key) {
@@ -91,6 +91,23 @@ void HTTPResponse::AppendBuffer(const char* content, size_t clen) {
 
 void HTTPResponse::SetContentType(const std::string& content_type) {
   header_->Set("Content-Type", content_type);
+}
+
+void HTTPResponse::SetContentEncoding(const std::string& encoding) {
+  header_->Set("Content-Encoding", encoding);
+}
+
+void HTTPResponse::MakeContentPlainText(const std::string& text) {
+  if (write_buf_ != nullptr) {
+    write_buf_->Append(text);
+    header_->Set("Content-Type", "text/plain; charset=utf-8");
+    header_->Set("Content-Length", std::to_string(text.size()));
+  }
+}
+
+void HTTPResponse::Redirect(const std::string& url, int code) {
+  header_->Set("Location", url);
+  SetStatus(code);
 }
 
 }  //  namespace http

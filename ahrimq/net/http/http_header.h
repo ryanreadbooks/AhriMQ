@@ -23,7 +23,7 @@ class HTTPHeader {
   /// @brief Add field into http header.
   /// @param key
   /// @param value
-  void Add(std::string key, std::string value);
+  void Add(const std::string& key, const std::string& value);
 
   /// @brief Delete field from http header.
   /// @param key
@@ -43,7 +43,7 @@ class HTTPHeader {
   /// be overwritten.
   /// @param key
   /// @param value
-  void Set(const std::string& key, std::string value);
+  void Set(const std::string& key, const std::string& value);
 
   /// @brief Get all field keys.
   /// @return

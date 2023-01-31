@@ -16,6 +16,7 @@ function(ahrimq_add_cc_test)
   set(cc_test_links "${AHRIMQ_CC_TEST_LINKS}")
 
   add_executable(${cc_test_target_name} ${cc_test_srcs})
+  set_property(TARGET ${cc_test_target_name} PROPERTY LINKER_LANGUAGE "CXX")
 
   target_link_libraries(
     ${cc_test_target_name} 
@@ -25,11 +26,31 @@ function(ahrimq_add_cc_test)
     ${cc_test_links}
   )
 
-  set_property(TARGET ${cc_test_target_name} PROPERTY LINKER_LANGUAGE "CXX")
-
   add_test(NAME ${cc_test_target_name} COMMAND ${cc_test_target_name})
-
 endfunction(ahrimq_add_cc_test)
+
+function(ahrimq_add_cc_executable)
+  cmake_parse_arguments(AHRIMQ_CC_EXEC
+    ""
+    "NAME"
+    "SRCS;LINKS"
+    ${ARGN}
+  )
+
+  set(cc_target_name "${AHRIMQ_CC_EXEC_NAME}")
+  set(cc_srcs "${AHRIMQ_CC_EXEC_SRCS}")
+  set(cc_links "${AHRIMQ_CC_EXEC_LINKS}")
+
+  add_executable(${cc_target_name} ${cc_srcs})
+  set_property(TARGET ${cc_target_name} PROPERTY LINKER_LANGUAGE "CXX")
+
+  target_link_libraries(
+    ${cc_target_name} 
+  PRIVATE 
+    ${cc_links}
+  )
+endfunction(ahrimq_add_cc_executable)
+
 
 # cmake helper function to create dependency
 function(ahrimq_create_dependency)

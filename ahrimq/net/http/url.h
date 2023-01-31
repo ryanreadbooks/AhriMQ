@@ -25,12 +25,12 @@ class URL {
     /// @brief Add value with given key.
     /// @param key
     /// @param value
-    void Add(const std::string& key, std::string value);
+    void Add(const std::string& key, const std::string& value);
 
     /// @brief  Set value with given key, original value will be overwritten.
     /// @param key
     /// @param value
-    void Set(const std::string& key, std::string value);
+    void Set(const std::string& key, const std::string& value);
 
     /// @brief Get the first value of given key, return "" if key not exists.
     /// @param key
@@ -70,7 +70,7 @@ class URL {
   };
 
  public:
-  URL(std::string url = "/");
+  URL(const std::string& url = "/");
 
   /// @brief Set new url string.
   /// @param s
@@ -91,6 +91,8 @@ class URL {
   std::string String() const {
     return url_;
   }
+
+  std::string StringNoQuery() const;
 
   /// @brief Reset url instance
   void Reset() {

@@ -9,13 +9,14 @@ HTTPHeader::HTTPHeader(HTTPHeader&& other) {
   other.members_.swap(members_);
 }
 
-void HTTPHeader::Add(std::string key, std::string value) {
-  if (!Has(key)) {
-    members_[std::move(key)].emplace_back(std::move(value));
-  } else {
-  // exists
-    members_[key].emplace_back(std::move(value));
-  }
+void HTTPHeader::Add(const std::string& key, const std::string& value) {
+  // if (!Has(key)) {
+  //   members_[key].emplace_back(value);
+  // } else {
+  //   // exists
+  //   members_[key].emplace_back(value);
+  // }
+  members_[key].emplace_back(value);
 }
 
 void HTTPHeader::Del(const std::string& key) {
@@ -36,8 +37,8 @@ std::vector<std::string> HTTPHeader::Values(const std::string& key) {
   return members_[key];
 }
 
-void HTTPHeader::Set(const std::string& key, std::string value) {
-  members_[key] = {std::move(value)};
+void HTTPHeader::Set(const std::string& key, const std::string& value) {
+  members_[key] = {value};
 }
 
 std::vector<std::string> HTTPHeader::AllFieldKeys() const {

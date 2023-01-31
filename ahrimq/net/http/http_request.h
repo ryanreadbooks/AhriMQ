@@ -53,8 +53,8 @@ class HTTPRequest {
     return url_;
   }
 
-  void SetURL(std::string url) {
-    url_.Set(std::move(url));
+  void SetURL(const std::string& url) {
+    url_.Set(url);
   }
 
   void SetHTTPVersion(int v) {
@@ -77,8 +77,16 @@ class HTTPRequest {
     return body_;
   }
 
+  /// @brief Get url query. 
+  /// @return 
   const URL::Query& Query() const {
     return url_.GetQuery();
+  }
+
+  /// @brief Check if url query is empty.
+  /// @return 
+  bool QueryEmpty() const {
+    return url_.GetQuery().Empty();
   }
 
  private:

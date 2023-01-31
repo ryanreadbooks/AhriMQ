@@ -1,5 +1,4 @@
-#include "net/tcp/tcp_server.h"
-#include "buffer/buffer.h"
+#include "ahrimq/net/tcp/tcp_server.h"
 
 int main(int argc, char** argv) {
   ahrimq::TCPServerConfig config;

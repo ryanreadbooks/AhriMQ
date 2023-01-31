@@ -5,16 +5,16 @@
 namespace ahrimq {
 namespace http {
 
-void URL::Query::Add(const std::string& key, std::string value) {
+void URL::Query::Add(const std::string& key, const std::string& value) {
   if (!Has(key)) {
-    params_[key] = {std::move(value)};
+    params_[key] = {value};
     return;
   }
-  params_[key].emplace_back(std::move(value));
+  params_[key].emplace_back(value);
 }
 
-void URL::Query::Set(const std::string& key, std::string value) {
-  params_[key] = {std::move(value)};
+void URL::Query::Set(const std::string& key, const std::string& value) {
+  params_[key] = {value};
 }
 
 std::string URL::Query::Get(const std::string& key) const {
@@ -62,13 +62,19 @@ std::ostream& operator<<(std::ostream& os, const URL::Query& query) {
   return os;
 }
 
-URL::URL(std::string url) : url_(std::move(url)) {
+URL::URL(const std::string& url) : url_(url) {
   ParseQuery();
 }
 
-std::ostream& operator<<(std::ostream& os, const URL& url) {
-  os << url.url_;
-  return os;
+std::string URL::StringNoQuery() const {
+  if (query_.Empty()) {
+    return url_;
+  }
+  size_t pos = url_.find('?');
+  if (pos == std::string::npos) {
+    return url_;
+  }
+  return url_.substr(0, pos);
 }
 
 void URL::ParseQuery() {
@@ -98,6 +104,11 @@ void URL::ParseQuery() {
       query_.Add(argp.substr(0, pos), argp.substr(pos + 1));
     }
   }
+}
+
+std::ostream& operator<<(std::ostream& os, const URL& url) {
+  os << url.url_;
+  return os;
 }
 
 }  // namespace http

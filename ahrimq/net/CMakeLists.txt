@@ -20,6 +20,7 @@ ahrimq_create_dependency(
     "http/http_request.cc"
     "http/http_response.cc"
     "http/http_version.cc"
+    "http/http_router.cc"
     "http/url.cc"
   INCS
     "addr.h"
@@ -38,6 +39,7 @@ ahrimq_create_dependency(
     "http/http_request.h"
     "http/http_response.h"
     "http/http_version.h"
+    "http/http_router.h"
     "http/url.h"
   LINKS
     pthread
@@ -47,21 +49,10 @@ ahrimq_create_dependency(
 
 ahrimq_add_cc_test(
   NAME
-    tcp_server_test
+    http_router_test
   SRCS
-    "tcp/tcp_server_test.cc"
+    "http/http_router_test.cc"
   LINKS
     ahrimq::net
     ahrimq::buffer
-)
-
-ahrimq_add_cc_test(
-  NAME
-    http_server_test
-  SRCS
-    "http/http_server_test.cc"
-  LINKS
-    ahrimq::net
-    ahrimq::buffer
-    ahrimq::base
 )

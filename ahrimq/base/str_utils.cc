@@ -60,6 +60,22 @@ std::string StrTrimRight(const std::string& str) {
   return std::string(str.begin(), str.begin() + idx + 1);
 }
 
+bool StrEqual(const std::string &s1, const std::string &s2, size_t end) {
+  size_t l1 = s1.size();
+  size_t l2 = s2.size();
+  if (end > l1 || end > l2 || end == 0) {
+    return false;
+  }
+  size_t idx = 0;
+  while (idx < end) {
+    if (s1[idx] != s2[idx]) {
+      return false;
+    }
+    idx++;
+  }
+  return true;
+}
+
 bool CanConvertToInt64(const std::string& str, int64_t& ans) {
   if (str.empty() || str.size() > 20) {
     return false;
