@@ -56,6 +56,10 @@ class RouteNode {
   /// @brief Params represents the parameters in url string
   class Params {
    public:
+    Params() = default;
+
+    Params(const std::vector<std::pair<std::string, std::string>>& params);
+
     std::vector<std::string> Keys() const;
 
     std::vector<std::string> Values() const;
@@ -65,6 +69,10 @@ class RouteNode {
     std::string Get(const std::string &key);
 
     void Reset();
+
+    bool operator==(const Params &other) const;
+    
+    bool operator!=(const Params &other) const;
 
    private:
     std::unordered_map<std::string, std::string> params_;

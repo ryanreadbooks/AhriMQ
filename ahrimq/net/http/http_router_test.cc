@@ -26,7 +26,8 @@ TEST(HTTPRouterTest, LongestCommonPrefixTest) {
   auto cases = std::vector<testLCPStruct>{
       {"", "", -1},       {"hello", "world", -1},  {"abc", "a", 0},
       {"abc", "ab", 1},   {"abcdef", "abcdef", 5}, {"abcd", "abc", 2},
-      {"ab", "abcde", 1}, {"", "hokwe", -1},       {"weo", "", -1}};
+      {"ab", "abcde", 1}, {"", "hokwe", -1},       {"weo", "", -1},
+  };
 
   doTest(cases);
 }
@@ -47,18 +48,20 @@ TEST(HTTPRouterTest, FindParamBracketTest) {
     }
   };
 
-  auto cases = std::vector<testPBStruct>{{"/a/b/c", "", -1},
-                                         {"/a/{name}/cs", "name", 3},
-                                         {"/test/home_{address}/xxx", "address", 11},
-                                         {"/a/b{{sd}", "", -2},
-                                         {"/a/b/{{ae", "", -2},
-                                         {"/a/b/c{name}}", "", -2},
-                                         {"/a/b/c/d/{name}xx/", "", -2},
-                                         {"/a/b/c/d/name}}", "", -1},
-                                         {"/a/{b}/{c}", "b", 3},
-                                         {"/{name}/b/c", "name", 1},
-                                         {"/{a}/{b}/{c}/d", "a", 1},
-                                         {"/a/b/c/d/{}/e", "", -2}};
+  auto cases = std::vector<testPBStruct>{
+      {"/a/b/c", "", -1},
+      {"/a/{name}/cs", "name", 3},
+      {"/test/home_{address}/xxx", "address", 11},
+      {"/a/b{{sd}", "", -2},
+      {"/a/b/{{ae", "", -2},
+      {"/a/b/c{name}}", "", -2},
+      {"/a/b/c/d/{name}xx/", "", -2},
+      {"/a/b/c/d/name}}", "", -1},
+      {"/a/{b}/{c}", "b", 3},
+      {"/{name}/b/c", "name", 1},
+      {"/{a}/{b}/{c}/d", "a", 1},
+      {"/a/b/c/d/{}/e", "", -2},
+  };
 
   doTest(cases);
 }
@@ -69,19 +72,21 @@ TEST(HTTPRouterTest, CheckWildcardTest) {
     std::string outname;
     int expect;
   };
-  auto cases = std::vector<cwtStruct>{{"{name}", "name", 0},
-                                      {"{abi}", "abi", 0},
-                                      {"{}", "", -2},
-                                      {"adwerad{adc}", "adc", 7},
-                                      {"abi{info}", "info", 3},
-                                      {"abi{info}xxx", "", -2},
-                                      {"abc{info", "", -2},
-                                      {"abc{info}}", "", -2},
-                                      {"{}}", "", -2},
-                                      {"{adc}xdwe", "", -2},
-                                      {"hello", "", -1},
-                                      {"swd", "", -1},
-                                      {"", "", -1}};
+  auto cases = std::vector<cwtStruct>{
+      {"{name}", "name", 0},
+      {"{abi}", "abi", 0},
+      {"{}", "", -2},
+      {"adwerad{adc}", "adc", 7},
+      {"abi{info}", "info", 3},
+      {"abi{info}xxx", "", -2},
+      {"abc{info", "", -2},
+      {"abc{info}}", "", -2},
+      {"{}}", "", -2},
+      {"{adc}xdwe", "", -2},
+      {"hello", "", -1},
+      {"swd", "", -1},
+      {"", "", -1},
+  };
 
   for (const auto& c : cases) {
     std::string tmp;
@@ -101,14 +106,16 @@ TEST(HTTPRouterTest, RouteNodeInsertTest) {
     bool expect;
   };
 
-  auto cases = std::vector<testRNIStruct>{{"/hello/api/v1/kind", true},
-                                          {"/hello/v3/user", true},
-                                          {"/person/age/name", true},
-                                          {"/hello/api/v2/ok", true},
-                                          {"/hello/api", true},
-                                          {"/hello/v3/user", false},
-                                          {"/", true},
-                                          {"/", false}};
+  auto cases = std::vector<testRNIStruct>{
+      {"/hello/api/v1/kind", true},
+      {"/hello/v3/user", true},
+      {"/person/age/name", true},
+      {"/hello/api/v2/ok", true},
+      {"/hello/api", true},
+      {"/hello/v3/user", false},
+      {"/", true},
+      {"/", false},
+  };
 
   auto doTest = [&](const std::vector<testRNIStruct>& cases) {
     for (const auto& example : cases) {
@@ -138,19 +145,21 @@ TEST(HTTPRouterTest, RouteNodeSearchRawTest) {
     bool expect_null;
   };
 
-  auto cases = std::vector<testRNSStruct>{{"/hello/api/v2/ok", "ok", false},
-                                          {"/hello/v3/user", "user", false},
-                                          {"/hello/api/v1/kind", "kind", false},
-                                          {"/person/age/name", "name", false},
-                                          {"/hello/api", "api", false},
-                                          {"/", "/", false},
-                                          {"/well/known/info", "info", false},
-                                          {"/a/b/c", "c", true},
-                                          {"/", "/", false},
-                                          {"/abc/edf/we", "we", true},
-                                          {"/abc/{hello/name", "name", true},
-                                          {"/你好/世界", "世界", false},
-                                          {"/home/page/codes", "代码", true}};
+  auto cases = std::vector<testRNSStruct>{
+      {"/hello/api/v2/ok", "ok", false},
+      {"/hello/v3/user", "user", false},
+      {"/hello/api/v1/kind", "kind", false},
+      {"/person/age/name", "name", false},
+      {"/hello/api", "api", false},
+      {"/", "/", false},
+      {"/well/known/info", "info", false},
+      {"/a/b/c", "c", true},
+      {"/", "/", false},
+      {"/abc/edf/we", "we", true},
+      {"/abc/{hello/name", "name", true},
+      {"/你好/世界", "世界", false},
+      {"/home/page/codes", "代码", true},
+  };
 
   auto doTest = [&](const std::vector<testRNSStruct>& cases) {
     for (const auto& c : cases) {
@@ -177,12 +186,15 @@ TEST(HTTPRouterTest, RouteNodeSearchWithWildcardTest) {
     ahrimq::http::HTTPCallback cb;
   };
   // insert some routes with wildcards
-  auto inserts =
-      std::vector<insert_pack>{{"/", gen_fn("index")},
-                               {"/home/{name}", gen_fn("/home/name")},
-                               {"/r/image/{id}", gen_fn("/r/image/id")},
-                               {"/r/music/user_{uid}", gen_fn("/r/music/user_uid")},
-                               {"/r/music", gen_fn("/r/music")}};
+  auto inserts = std::vector<insert_pack>{
+      {"/", gen_fn("index")},
+      {"/home/{name}", gen_fn("/home/name")},
+      {"/r/image/{id}", gen_fn("/r/image/id")},
+      {"/r/music/user_{uid}", gen_fn("/r/music/user_uid")},
+      {"/r/music", gen_fn("/r/music")},
+      {"/user_{name}", gen_fn("/user_name")},
+      {"/user_{name}/about", gen_fn("/user_name/about")},
+  };
 
   for (const auto& i : inserts) {
     bool have = root.InsertRoute(i.url, i.cb);
@@ -217,7 +229,10 @@ TEST(HTTPRouterTest, RouteNodeSearchWithWildcardTest) {
       {"/r/music/user_100", true, "uid", "100", "/r/music/user_uid"},
       {"/r/music/user_aEWKdxc-+", true, "uid", "aEWKdxc-+", "/r/music/user_uid"},
       {"/r/music/mkie", false, "", "", ""},
-      {"/r/music/user_", false, "", "", ""}};
+      {"/r/music/user_", false, "", "", ""},
+      {"/user_ryan", true, "name", "ryan", "/user_name"},
+      {"/user_ryan/about", true, "name", "ryan", "/user_name/about"},
+  };
 
   ahrimq::http::HTTPRequest req(nullptr);
   ahrimq::http::HTTPResponse res(nullptr);
@@ -238,7 +253,6 @@ TEST(HTTPRouterTest, RouteNodeSearchWithWildcardTest) {
     }
 
     if (node == nullptr || node->Handler() == nullptr) {
-      std::cout << s.request_url << " node == nullptr, skip\n";
       continue;
     }
     if (params.Get(s.param_key) != s.param_value) {
@@ -300,6 +314,109 @@ TEST(HTTPRouterTest, RouteNodeInsertWithWildcardTest) {
   };
 
   doTest(cases);
+}
+
+TEST(HTTPRouterTest, RouteNodeMultipleWildcardTest) {
+  ahrimq::http::detail::RouteNode root;
+  auto gen_fn = [](std::string arg) -> ahrimq::http::HTTPCallback {
+    return [arg](const ahrimq::http::HTTPRequest&, ahrimq::http::HTTPResponse&,
+                 const ahrimq::http::URLParams&) -> std::string { return arg; };
+  };
+
+  struct insert_pack {
+    std::string url;
+    ahrimq::http::HTTPCallback cb;
+  };
+  // insert some routes with wildcards
+  auto inserts = std::vector<insert_pack>{
+      {"/home/{name}/{id}", gen_fn("/home/name/id")},
+      {"/home/{name}/{id}/about", gen_fn("/home/name/id/about")},
+      {"/search/{query}/project/{item}", gen_fn("/search/query/project/item")},
+      {"/image/{kk}/type", gen_fn("/image/kk/type")},
+      {"/music/user_{name}/page/{id}", gen_fn("/music/user_name/page/id")},
+      {"/data/lib{id}", gen_fn("/data/libid")},
+  };
+
+  for (const auto& i : inserts) {
+    bool have = root.InsertRoute(i.url, i.cb);
+    if (!have) {
+      FAIL() << "adding " << i.url << " failed\n";
+    }
+  }
+
+  // search
+  struct request_pack {
+    std::string request_url;
+    bool should_found;
+    ahrimq::http::URLParams params;
+    std::string cb_return;
+  };
+  using namespace ahrimq::http;
+  URLParams empty;
+  auto requests = std::vector<request_pack>{
+      {"/page/name", false, empty, ""},
+      {"/number/qer/ewpoja", false, empty, ""},
+      {"/home/ryan/100", true, URLParams{{{"name", "ryan"}, {"id", "100"}}},
+       "/home/name/id"},
+      {"/home/valen/200", true, URLParams{{{"name", "valen"}, {"id", "200"}}},
+       "/home/name/id"},
+      {"/home/lily", false, empty, ""},
+      {"/home/ryan/100/about", true, URLParams{{{"name", "ryan"}, {"id", "100"}}},
+       "/home/name/id/about"},
+      {"/search/city/project", false, empty, ""},
+      {"/search/city/project/building", true,
+       URLParams{{{"query", "city"}, {"item", "building"}}},
+       "/search/query/project/item"},
+      {"/image/qwe/wer/gsd", false, empty, ""},
+      {"/image/abc/type", true, URLParams{{{"kk", "abc"}}}, "/image/kk/type"},
+      {"/music/username/page/id", false, empty, ""},
+      {"/music/user_ryan/page/100", true,
+       URLParams{{{"name", "ryan"}, {"id", "100"}}}, "/music/user_name/page/id"},
+      {"/music/user_li/page", false, empty, ""},
+      {"/music/user_/page/23o", false, empty, ""},
+      {"/data/liba.so", true, URLParams{{{"id", "a.so"}}}, "/data/libid"},
+      {"/data/liba.so/name", false, empty, ""},
+      {"/data/lic.so", false, empty, ""},
+      {"/data/libimage", true, URLParams{{{"id", "image"}}}, "/data/libid"}
+  };
+
+  ahrimq::http::HTTPRequest req(nullptr);
+  ahrimq::http::HTTPResponse res(nullptr);
+
+  for (const auto& s : requests) {
+    ahrimq::http::URLParams params;
+    auto node = root.SearchRoute(s.request_url, params);
+    if (s.should_found) {
+      if (node == nullptr || node->Handler() == nullptr) {
+        ADD_FAILURE() << "can not found for " << s.request_url << '\n';
+        continue;
+      }
+    } else {
+      if (node != nullptr && node->Handler() != nullptr) {
+        ADD_FAILURE() << s.request_url << " should not be found\n";
+        continue;
+      }
+    }
+
+    if (node == nullptr || node->Handler() == nullptr) {
+      continue;
+    }
+    if (params != s.params) {
+      std::stringstream ss;
+      ss << s.request_url << " params wrong: ";
+      auto ks = params.Keys();
+      auto vs = params.Values();
+      for (size_t i = 0; i < ks.size(); i++) {
+        ss << ks[i] << "=" << vs[i] << ",";
+      }
+      ADD_FAILURE() << ss.str() << '\n';
+    }
+    auto have_cb_return = node->Handler()(req, res, params);
+    if (have_cb_return != s.cb_return) {
+      ADD_FAILURE() << "cb return have: " << have_cb_return
+                    << ", expect: " << s.cb_return << std::endl;
+    }
+  }
 }
 
 int main(int argc, char** argv) {

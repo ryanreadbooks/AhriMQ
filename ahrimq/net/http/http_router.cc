@@ -88,6 +88,13 @@ int CheckWildcard(const std::string& s, std::string& outname) {
   return std::distance(begin, idx);
 }
 
+RouteNode::Params::Params(
+    const std::vector<std::pair<std::string, std::string>>& params) {
+  for (auto& p : params) {
+    params_.insert(p);
+  }
+}
+
 std::vector<std::string> RouteNode::Params::Keys() const {
   std::vector<std::string> keys;
   keys.reserve(params_.size());
@@ -116,6 +123,14 @@ std::string RouteNode::Params::Get(const std::string& key) {
 
 void RouteNode::Params::Reset() {
   params_.clear();
+}
+
+bool RouteNode::Params::operator==(const Params& other) const {
+  return params_ == other.params_;
+}
+
+bool RouteNode::Params::operator!=(const Params& other) const {
+  return params_ != other.params_;
 }
 
 RouteNode::RouteNode() {}
@@ -226,12 +241,19 @@ bool RouteNode::Insert(const std::string& url,
             return false;
           }
           // wildcard is like "yyy{yyy}"
-          // check longes common prefix
+          // check longest common prefix
           int cpfx = LongestCommonPrefix(child->segment_, segments[index]);
           int l1 = child->segment_.size() - 1;
           int l2 = segments[index].size() - 1;
-          if (cpfx != -1 && (cpfx == l1 || cpfx == l2)) {
-            return false;
+          if (cpfx != -1) {
+            if (l1 == l2 && l2 == cpfx) {
+              // two wildcard is exactly the same
+              next = child;
+              break;
+            } else if (l1 == cpfx || l2 == cpfx) {
+              // two wildcard is not the same
+              return false;
+            }
           }
         }
       }
@@ -258,12 +280,13 @@ RouteNode* RouteNode::Search(const std::string& url,
       }
     } else {
       // check if wildcard match segments[index - 1]
-      if (segment_[0] == '{') {
-        return this;
-      } else {
-        // check prefix match exactly
-        return this;
-      }
+      // if (segment_[0] == '{') {
+      //   return this;
+      // } else {
+      //   // check prefix match exactly
+      //   return this;
+      // }
+      return this;
     }
   }
   // do not match in this node, we need to find its children
@@ -291,9 +314,12 @@ RouteNode* RouteNode::Search(const std::string& url,
           // matched
           std::string param_value = segments[index].substr(idx + 1);
           if (!param_value.empty()) {
-            params.Set(child->wildcard_name_, param_value);
-            found = child.get();
-            break;
+            int childwildloc = child->segment_.find('{');
+            if (idx == childwildloc - 1) {
+              params.Set(child->wildcard_name_, param_value);
+              found = child.get();
+              break;
+            }
           }
         }
       }
