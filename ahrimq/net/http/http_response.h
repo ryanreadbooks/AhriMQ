@@ -52,19 +52,21 @@ class HTTPResponse {
   /// the response header.
   void Reset();
 
-  /// @brief Organize response content into write buffer.
+  /// @brief Organize response content into write buffer. Organize will organize
+  /// response header and response body bytes into connection write buffer.
   /// @param wbuf
   void Organize(Buffer& wbuf) const;
 
-  /// @brief Append char content to response write buffer. this is raw function,
-  /// constructing manually http format is needed.
+  /// @brief Append char content to response write buffer. Constructing manually http
+  /// format is needed when using this function.
   /// @param content
-  void AppendBuffer(const std::string& content);
+  void AppendConnBuffer(const std::string& content);
 
-  /// @brief Append char content to response write buffer.
+  /// @brief Append char content to response write buffer. Constructing manually http
+  /// format is needed when using this function.
   /// @param content
   /// @param clen
-  void AppendBuffer(const char* content, size_t clen);
+  void AppendConnBuffer(const char* content, size_t clen);
 
   // FIXME we should use enum class to specify content type
   /// @brief Set response content-type.
@@ -76,13 +78,24 @@ class HTTPResponse {
   /// @param encoding
   void SetContentEncoding(const std::string& encoding);
 
-  /// @brief Convenient function to add plain text response body.
+  Buffer& UserBuffer() {
+    return user_buf_;
+  }
+
+  /// @brief Convenient function to add plain text response body. Using this function
+  /// to add response body is recommended.
   /// @param text
   void MakeContentPlainText(const std::string& text);
 
-  /// @brief Convenient function to add json content to response body.
+  /// @brief Convenient function to add json content to response body. Using this
+  /// function to add response body is recommended.
   /// @param json
   void MakeContentJson(const std::string& json);
+
+  /// @brief Convenient function to add html content to response body. Using this
+  /// function to add response body is recommended when html content is short.
+  /// @param html
+  void MakeContentSimpleHTML(const std::string& html);
 
   /// @brief Set response redirect.
   /// @param url redirected url
@@ -95,8 +108,10 @@ class HTTPResponse {
   int status_ = StatusBadRequest;
   // http response header
   HTTPHeaderPtr header_;
-  // write buffer to store data
+  // write buffer from connection to store write data
   Buffer* write_buf_;
+  // buffer to store user data
+  Buffer user_buf_;
   // TODO we need body pointer to point to the response body?
 };
 

@@ -90,7 +90,7 @@ class Reactor : public NoCopyable {
   // all connections
   std::unordered_map<std::string, ReactorConnPtr> conns_;
 
-  // TODO: all threads that run eventloops
+  // all threads that run eventloops
   std::vector<std::thread> worker_threads_;
   mutable std::mutex mtx_;
   std::condition_variable cond_;
@@ -107,7 +107,7 @@ class Reactor : public NoCopyable {
   // ev_close_handler_ is called every time a connection is closed
   ReactorGenericEventHandler ev_close_handler_;
   // ev_write_handler_ is called every time EPOLLOUT is reached
-  ReactorGenericEventHandler ev_write_handler_;  // FIXME: may be obselete
+  ReactorGenericEventHandler ev_write_handler_;
   // ev_accept_handler_ is called every time a new connection is open
   ReactorGenericEventHandler ev_accept_handler_;
 };

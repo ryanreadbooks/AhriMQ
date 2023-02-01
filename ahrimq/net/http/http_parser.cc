@@ -46,6 +46,7 @@ int ParseRequestLine(HTTPConn* conn) {
   // HTTPMethod Request-URL HTTPVersion
   if (v.size() != 3) {  // syntax error
     conn->SetCurrentParsingStateInvalid();
+    std::cerr << "ParseRequestLine " << StatusBadRequest << '\n';
     return StatusBadRequest;  // 400
   }
 
@@ -54,7 +55,8 @@ int ParseRequestLine(HTTPConn* conn) {
   const std::string& request_method = v[0];
   if (!HTTPMethodSupported(request_method)) {
     conn->SetCurrentParsingStateInvalid();  // invalidate
-    return StatusNotImplemented;            // 501
+    std::cerr << "ParseRequestLine " << StatusNotImplemented << '\n';
+    return StatusNotImplemented;  // 501
   }
   req_ref->SetMethod(request_method);
 
@@ -67,7 +69,8 @@ int ParseRequestLine(HTTPConn* conn) {
   int httpver = ParseHTTPVersion(request_http_version);
   if (!HTTPVersionSupported(httpver)) {
     conn->SetCurrentParsingStateInvalid();  // invalidate
-    return StatusHTTPVersionNotSupported;   // 505
+    std::cerr << "ParseRequestLine " << StatusHTTPVersionNotSupported << '\n';
+    return StatusHTTPVersionNotSupported;  // 505
   }
   req_ref->SetHTTPVersion(httpver);
 
@@ -110,6 +113,7 @@ int ParseRequestHeader(HTTPConn* conn) {
   } else if (line_state == LineParsingState::LineInvalid) {
     // LineInvalid
     conn->SetCurrentParsingStateInvalid();
+    std::cerr << "ParseRequestHeader " << StatusBadRequest << '\n';
     return StatusBadRequest;  // 400
   }
   // below is not reachable
@@ -141,6 +145,8 @@ int ParseRequestEmptyLine(HTTPConn* conn) {
   }
   // request empty line is invalid
   conn->SetCurrentParsingStateInvalid();
+  std::cerr << "ParseRequestEmptyLine " << StatusBadRequest << '\n';
+
   return StatusBadRequest;  // 400
 }
 
@@ -157,6 +163,7 @@ int ParseRequestBody(HTTPConn* conn) {
   if (!CanConvertToUInt64(content_length, clen)) {
     // we can not content-length string to integer
     conn->SetCurrentParsingStateDone();
+    std::cerr << "ParseRequestBody " << StatusBadRequest << '\n';
     return StatusBadRequest;  // 400
   }
   Buffer& rbuf = conn->GetReadBuffer();
@@ -171,13 +178,13 @@ int ParseRequestBody(HTTPConn* conn) {
 // conclude the process to parse request data
 int ParseRequestDatagram(HTTPConn* conn) {
   if (conn == nullptr) {
+    std::cerr << "ParseRequestDatagram " << StatusInternalServerError << '\n';
     return StatusInternalServerError;
   }
   RequestParsingState state = RequestParsingState::RequestLine;
   int retcode;
   while (state != RequestParsingState::Invalid &&
-         state != RequestParsingState::Done && 
-         retcode != StatusPrivatePending &&
+         state != RequestParsingState::Done && retcode != StatusPrivatePending &&
          retcode != StatusPrivateInvalid) {
     state = conn->GetCurrentParsingState();
     switch (state) {
@@ -213,6 +220,7 @@ int ParseRequestDatagram(HTTPConn* conn) {
       }
       default: {
         // error, internal error
+        std::cerr << "default branch ParseRequestDatagram " << StatusInternalServerError << '\n';
         return StatusInternalServerError;
       }
     }

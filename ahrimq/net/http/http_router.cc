@@ -4,6 +4,9 @@
 
 #include "base/str_utils.h"
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 namespace ahrimq {
 namespace http {
 
@@ -117,8 +120,12 @@ void RouteNode::Params::Set(const std::string& key, const std::string& value) {
   params_[key] = value;
 }
 
-std::string RouteNode::Params::Get(const std::string& key) {
-  return params_[key];
+std::string RouteNode::Params::Get(const std::string& key) const {
+  try {
+    return params_.at(key);
+  } catch (std::out_of_range& ex) {
+    return "";
+  }
 }
 
 void RouteNode::Params::Reset() {
@@ -141,11 +148,13 @@ RouteNode::RouteNode(const std::string& segment)
 RouteNode::RouteNode(const std::string& segment, const std::string& wildcard_name)
     : segment_(segment), handler_(nullptr), wildcard_name_(wildcard_name) {}
 
-RouteNode::~RouteNode() {}
+RouteNode::~RouteNode() {
+  // TODO need to free all nodes
+  children_.clear();
+}
 
 bool RouteNode::InsertRoute(const std::string& url, const HTTPCallback& callback) {
   if (url == "/") {
-    // TODO special handling when url == "/"
     if (!pattern_.empty()) {
       return false;
     }
@@ -162,7 +171,8 @@ bool RouteNode::InsertRoute(const std::string& url, const HTTPCallback& callback
   return Insert(url, segments, 0, callback);
 }
 
-RouteNode* RouteNode::SearchRoute(const std::string& url, Params& params) {
+const RouteNode* RouteNode::SearchRoute(const std::string& url,
+                                        Params& params) const {
   if (url == pattern_) {
     return this;
   }
@@ -172,6 +182,15 @@ RouteNode* RouteNode::SearchRoute(const std::string& url, Params& params) {
     return nullptr;
   }
   return Search(url, segments, 0, params);
+}
+
+const RouteNode::HTTPHandler RouteNode::SearchHandler(const std::string& url,
+                                                      Params& params) const {
+  const RouteNode* node = SearchRoute(url, params);
+  if (node == nullptr) {
+    return nullptr;
+  }
+  return node->handler_;
 }
 
 bool RouteNode::Insert(const std::string& url,
@@ -269,9 +288,9 @@ bool RouteNode::Insert(const std::string& url,
   return next->Insert(url, segments, index + 1, callback);
 }
 
-RouteNode* RouteNode::Search(const std::string& url,
-                             const std::vector<std::string>& segments, size_t index,
-                             Params& params) {
+const RouteNode* RouteNode::Search(const std::string& url,
+                                   const std::vector<std::string>& segments,
+                                   size_t index, Params& params) const {
   if (index == segments.size()) {
     if (wildcard_name_.empty()) {
       if (segments[index - 1] == segment_) {
@@ -333,16 +352,122 @@ RouteNode* RouteNode::Search(const std::string& url,
 
 }  // namespace detail
 
-bool HTTPRouter::RegisterGet(HTTPCallback callback) {
-  return Register(HTTPMethod::Get, std::move(callback));
+HTTPRouter::HTTPRouter() {
+  // construct tree
+  trees_.emplace(HTTPMethod::Get, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Head, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Post, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Put, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Patch, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Delete, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Connect, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Options, std::make_shared<detail::RouteNode>());
+  trees_.emplace(HTTPMethod::Trace, std::make_shared<detail::RouteNode>());
 }
 
-bool HTTPRouter::RegisterPost(HTTPCallback callback) {
-  return Register(HTTPMethod::Post, std::move(callback));
+HTTPRouter::~HTTPRouter() {
+  trees_.clear();
 }
 
-bool HTTPRouter::Register(HTTPMethod method, HTTPCallback&& callback) {
-  return false;
+std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
+                              const HTTPRequest& req, HTTPResponse& res) {
+  // find handler function for given method and given url
+  URLParams params;
+  std::string response_page = "";
+  if (trees_.count(method) == 0) {
+    // method not supported (405)
+    // TODO return a default 405 handler if no custom 405 handler is set
+    std::cerr << "HTTPRouter::Route 405 handler\n";
+    return Default405Handler(req, res, params);
+  } else {
+    const HTTPCallback& handler = trees_[method]->SearchHandler(url, params);
+    if (handler == nullptr) {
+      // given url is not registered (404)
+      // TODO return a default 404 handler if no custom 404 handler is set
+      std::cerr << "HTTPRouter::Route 404 handler\n";
+      return Default404Handler(req, res, params);
+    }
+    // custom handler found
+    try {
+      response_page = handler(req, res, params);
+    } catch (std::exception& ex) {
+      // internal error
+      std::cerr << "HTTPRouter::Route 500 handler\n";
+      response_page = Default500Handler(req, res, params);
+    }
+  }
+  // recover params
+  return response_page;
+}
+
+bool HTTPRouter::RegisterGet(const std::string& url, const HTTPCallback& callback) {
+  return Register(HTTPMethod::Get, url, callback);
+}
+
+bool HTTPRouter::RegisterHead(const std::string& url, const HTTPCallback& callback) {
+  return Register(HTTPMethod::Head, url, callback);
+}
+
+bool HTTPRouter::RegisterPost(const std::string& url, const HTTPCallback& callback) {
+  return Register(HTTPMethod::Post, url, callback);
+}
+
+bool HTTPRouter::RegisterPut(const std::string& url, const HTTPCallback& callback) {
+  return Register(HTTPMethod::Put, url, callback);
+}
+
+bool HTTPRouter::RegisterPatch(const std::string& url,
+                               const HTTPCallback& callback) {
+  return Register(HTTPMethod::Patch, url, callback);
+}
+
+bool HTTPRouter::RegisterDelete(const std::string& url,
+                                const HTTPCallback& callback) {
+  return Register(HTTPMethod::Delete, url, callback);
+}
+
+bool HTTPRouter::RegisterConnect(const std::string& url,
+                                 const HTTPCallback& callback) {
+  return Register(HTTPMethod::Connect, url, callback);
+}
+
+bool HTTPRouter::RegisterOptions(const std::string& url,
+                                 const HTTPCallback& callback) {
+  return Register(HTTPMethod::Options, url, callback);
+}
+
+bool HTTPRouter::RegisterTrace(const std::string& url,
+                               const HTTPCallback& callback) {
+  return Register(HTTPMethod::Trace, url, callback);
+}
+
+bool HTTPRouter::Register(HTTPMethod method, const std::string& url,
+                          const HTTPCallback& callback) {
+  return trees_[method]->InsertRoute(url, callback);
+}
+
+// TODO
+std::string HTTPRouter::Default404Handler(const HTTPRequest& req, HTTPResponse& res,
+                                          const URLParams& params) {
+  res.SetStatus(StatusNotFound);
+  res.MakeContentSimpleHTML(DEFAULT_404_PAGE);
+  return "404.html";
+}
+
+// TODO
+std::string HTTPRouter::Default405Handler(const HTTPRequest& req, HTTPResponse& res,
+                                          const URLParams& params) {
+  res.SetStatus(StatusMethodNotAllowed);
+  res.MakeContentSimpleHTML(DEFAULT_405_PAGE);
+  return "405.html";
+}
+
+// TODO
+std::string HTTPRouter::Default500Handler(const HTTPRequest& req, HTTPResponse& res,
+                                          const URLParams& params) {
+  res.SetStatus(StatusInternalServerError);
+  res.MakeContentSimpleHTML(DEFAULT_500_PAGE);
+  return "500.html";
 }
 
 }  // namespace http

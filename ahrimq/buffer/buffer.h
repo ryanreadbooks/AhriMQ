@@ -84,7 +84,7 @@ class Buffer : public NoCopyable {
 
   /// @brief Get the pointer of the begin of readable bytes.
   /// @return
-  inline char *BeginReadIndex() {
+  inline const char *BeginReadIndex() const {
     return data_.data() + p_reader_;
   }
 
@@ -93,6 +93,10 @@ class Buffer : public NoCopyable {
   inline char *BeginWriteIndex() {
     return data_.data() + p_writer_;
   }
+
+  /// @brief Append data from another buffer.
+  /// @param other 
+  void Append(const Buffer& other);
 
   /// @brief Append more value into buffer.
   /// @param value

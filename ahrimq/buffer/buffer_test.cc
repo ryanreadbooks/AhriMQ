@@ -99,6 +99,15 @@ TEST(BufferTest, CRLFTest) {
   std::cout << "-------\n";
 }
 
+TEST(BufferTest, AppendBufferTest) {
+  ahrimq::Buffer buf;
+  buf.Append("helloworld");
+  ahrimq::Buffer buf2;
+  buf2.Append(", are you ok?");
+  buf.Append(buf2);
+  std::cout<< buf.ReadableAsString() << std::endl;
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

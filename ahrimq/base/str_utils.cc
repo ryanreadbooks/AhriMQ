@@ -1,6 +1,7 @@
 #include "base/str_utils.h"
 
 #include <iostream>
+#include <cstring>
 #include <sstream>
 
 namespace ahrimq {
@@ -44,6 +45,13 @@ void StrInplaceToLower(std::string& str) {
                  [](unsigned char c) { return std::tolower(c); });
 }
 
+void StrInplaceToLowerCapitalize(std::string &str) {
+  StrInplaceToLower(str);
+  if (!str.empty()) {
+    str[0] = std::toupper(str[0]);
+  }
+}
+
 std::string StrTrimLeft(const std::string& str) {
   if (str.empty()) {
     return "";
@@ -74,6 +82,10 @@ bool StrEqual(const std::string &s1, const std::string &s2, size_t end) {
     idx++;
   }
   return true;
+}
+
+bool StrCaseEqual(const std::string& s1, const std::string& s2) {
+  return strcasecmp(s1.c_str(), s2.c_str()) == 0;
 }
 
 bool CanConvertToInt64(const std::string& str, int64_t& ans) {

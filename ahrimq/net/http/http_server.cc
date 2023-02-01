@@ -23,14 +23,14 @@ HTTPServer::HTTPServer(const HTTPServer::Config& config)
 
 HTTPServer::~HTTPServer() {}
 
-// TODO
+// TODO improve this
 void HTTPServer::Run() {
   assert(reactor_ != nullptr);
   reactor_->React();
   reactor_->Wait();
 }
 
-// TODO
+// TODO improve this
 void HTTPServer::Stop() {}
 
 void HTTPServer::InitReactorHandlers() {
@@ -45,11 +45,39 @@ void HTTPServer::InitReactorHandlers() {
 }
 
 bool HTTPServer::Get(const std::string& pattern, const HTTPCallback& callback) {
-  return false;
+  return router_.RegisterGet(pattern, callback);
+}
+
+bool HTTPServer::Head(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterHead(pattern, callback);
 }
 
 bool HTTPServer::Post(const std::string& pattern, const HTTPCallback& callback) {
-  return false;
+  return router_.RegisterPost(pattern, callback);
+}
+
+bool HTTPServer::Put(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterPut(pattern, callback);
+}
+
+bool HTTPServer::Patch(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterPatch(pattern, callback);
+}
+
+bool HTTPServer::Delete(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterDelete(pattern, callback);
+}
+
+bool HTTPServer::Connect(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterConnect(pattern, callback);
+}
+
+bool HTTPServer::Options(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterOptions(pattern, callback);
+}
+
+bool HTTPServer::Trace(const std::string& pattern, const HTTPCallback& callback) {
+  return router_.RegisterTrace(pattern, callback);
 }
 
 void HTTPServer::InitHTTPServer() {
@@ -140,17 +168,11 @@ void HTTPServer::DoRequest(HTTPConn* conn) {
     res_header->Add("Connection", "keep-alive");
   }
   // routing
-  DoRouting(conn);
+  std::string response_page = DoRouting(conn);
 
-  // add response data
-  // TODO: below is for debug purposes
-  res->SetStatus(StatusOK);
-  std::string body = "{\"name\" : \"ryanreadbooks\"}";
-  size_t len = body.size();
-  res_header->Add("Content-Length", std::to_string(len));
-  res_header->Add("Content-Type", "application/json");
+  // TODO: add response data
   res->Organize(conn->GetWriteBuffer());
-  conn->GetWriteBuffer().Append(body);
+  // response body
 
   req->Reset();
 }
@@ -178,9 +200,12 @@ void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
 }
 
 // TODO route tracing and call corresponding user-specific methods
-void HTTPServer::DoRouting(HTTPConn* conn) {
+std::string HTTPServer::DoRouting(HTTPConn* conn) {
+  HTTPRequestPtr& req_ref = conn->CurrentRequestRef();
+  HTTPResponsePtr& res_ref = conn->CurrentResponseRef();
   std::string path = conn->CurrentRequestRef()->URLRef().StringNoQuery();
   // use http router to decide which handler callback function should be invoked.
+  return router_.Route(req_ref->Method(), path, *req_ref, *res_ref);
 }
 
 }  // namespace http

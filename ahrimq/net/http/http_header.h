@@ -73,6 +73,10 @@ class HTTPHeader {
   /// @return
   bool Equals(const std::string& key, const char* target);
 
+  bool CaseEquals(const std::string& key, const std::string& target);
+
+  bool CaseEquals(const std::string& key, const char* target);
+
   /// @brief Return the underneath std::unordered_map.
   /// @return
   const std::unordered_map<std::string, std::vector<std::string>>& Members() const {

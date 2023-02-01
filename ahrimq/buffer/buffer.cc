@@ -4,6 +4,13 @@
 
 namespace ahrimq {
 
+void Buffer::Append(const Buffer& other) {
+  size_t s = other.Size();
+  EnsureBytesForWrite(s);
+  memcpy(BeginWriteIndex(), other.BeginReadIndex(), s);
+  p_writer_ += s;
+}
+
 void Buffer::Append(const std::string &value) {
   Append(value.data(), value.size());
 }

@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "base/str_utils.h"
+
 namespace ahrimq {
 namespace http {
 
@@ -10,35 +12,39 @@ HTTPHeader::HTTPHeader(HTTPHeader&& other) {
 }
 
 void HTTPHeader::Add(const std::string& key, const std::string& value) {
-  // if (!Has(key)) {
-  //   members_[key].emplace_back(value);
-  // } else {
-  //   // exists
-  //   members_[key].emplace_back(value);
-  // }
-  members_[key].emplace_back(value);
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  members_[std::move(k)].emplace_back(value);
 }
 
 void HTTPHeader::Del(const std::string& key) {
-  members_.erase(key);
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  members_.erase(k);
 }
 
 std::string HTTPHeader::Get(const std::string& key) {
-  if (!Has(key)) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
     return "";
   }
-  return members_[key][0];
+  return members_[k][0];
 }
 
 std::vector<std::string> HTTPHeader::Values(const std::string& key) {
-  if (!Has(key)) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
     return {};
   }
-  return members_[key];
+  return members_[k];
 }
 
 void HTTPHeader::Set(const std::string& key, const std::string& value) {
-  members_[key] = {value};
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  members_[std::move(k)] = {value};
 }
 
 std::vector<std::string> HTTPHeader::AllFieldKeys() const {
@@ -68,17 +74,39 @@ bool HTTPHeader::Has(const std::string& key) const {
 }
 
 bool HTTPHeader::Equals(const std::string& key, const std::string& target) {
-  if (!Has(key)) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
     return false;
   }
-  return members_[key][0] == target;
+  return members_[k][0] == target;
 }
 
 bool HTTPHeader::Equals(const std::string& key, const char* target) {
-  if (!Has(key)) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
     return false;
   }
-  return members_[key][0] == target;
+  return members_[k][0].c_str() == target;
+}
+
+bool HTTPHeader::CaseEquals(const std::string& key, const std::string& target) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
+    return false;
+  }
+  return strcasecmp(members_[k][0].c_str(), target.c_str()) == 0;
+}
+
+bool HTTPHeader::CaseEquals(const std::string& key, const char* target) {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  if (!Has(k)) {
+    return false;
+  }
+  return strcasecmp(members_[k][0].c_str(), target) == 0;
 }
 
 }  // namespace http

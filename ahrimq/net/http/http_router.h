@@ -9,6 +9,7 @@
 
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
+#include "net/http/pages.h"
 
 namespace ahrimq {
 namespace http {
@@ -58,7 +59,7 @@ class RouteNode {
    public:
     Params() = default;
 
-    Params(const std::vector<std::pair<std::string, std::string>>& params);
+    Params(const std::vector<std::pair<std::string, std::string>> &params);
 
     std::vector<std::string> Keys() const;
 
@@ -66,21 +67,21 @@ class RouteNode {
 
     void Set(const std::string &key, const std::string &value);
 
-    std::string Get(const std::string &key);
+    std::string Get(const std::string &key) const;
 
     void Reset();
 
     bool operator==(const Params &other) const;
-    
+
     bool operator!=(const Params &other) const;
 
    private:
     std::unordered_map<std::string, std::string> params_;
   };
 
-  typedef std::function<std::string(const HTTPRequest &, HTTPResponse &,
-                                    const Params &)>
-      HTTPHandler;
+  // clang-format off
+  typedef std::function<std::string(const HTTPRequest &, HTTPResponse &, const Params &)> HTTPHandler;
+  // clang-format on
 
  public:
   RouteNode();
@@ -105,9 +106,9 @@ class RouteNode {
 
   bool InsertRoute(const std::string &url, const HTTPHandler &callback);
 
-  RouteNode *SearchRoute(const std::string &url, Params &params);
+  const RouteNode *SearchRoute(const std::string &url, Params &params) const;
 
-  HTTPHandler SearchHandler(const std::string &url) const;
+  const HTTPHandler SearchHandler(const std::string &url, Params &params) const;
 
   /// @brief Check if node has wildcard parameter.
   /// @return
@@ -119,8 +120,9 @@ class RouteNode {
   bool Insert(const std::string &url, const std::vector<std::string> &segments,
               size_t index, const HTTPHandler &callback);
 
-  RouteNode *Search(const std::string &url, const std::vector<std::string> &segments,
-                    size_t index, Params &params);
+  const RouteNode *Search(const std::string &url,
+                          const std::vector<std::string> &segments, size_t index,
+                          Params &params) const;
 
  private:
   // full pattern
@@ -145,22 +147,52 @@ typedef detail::RouteNode::HTTPHandler HTTPCallback;
 class HTTPRouter {
  public:
   /// @brief Construct an http router.
-  HTTPRouter() = default;
+  HTTPRouter();
 
   /// @brief Destroy the http router.
-  ~HTTPRouter() = default;
+  ~HTTPRouter();
 
-  bool RegisterGet(HTTPCallback callback);
+  std::string Route(HTTPMethod method, const std::string &url,
+                    const HTTPRequest &req, HTTPResponse &res);
 
-  bool RegisterPost(HTTPCallback callback);
+  bool RegisterGet(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterHead(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterPost(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterPut(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterPatch(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterDelete(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterConnect(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterOptions(const std::string &url, const HTTPCallback &callback);
+
+  bool RegisterTrace(const std::string &url, const HTTPCallback &callback);
 
  private:
-  bool Register(HTTPMethod method, HTTPCallback &&callback);
+  bool Register(HTTPMethod method, const std::string &url,
+                const HTTPCallback &callback);
+
+  static std::string Default404Handler(const HTTPRequest &req, HTTPResponse &res,
+                                       const URLParams &params);
+
+  static std::string Default405Handler(const HTTPRequest &req, HTTPResponse &res,
+                                       const URLParams &params);
+
+  static std::string Default500Handler(const HTTPRequest &req, HTTPResponse &res,
+                                       const URLParams &params);
 
  private:
-  std::unordered_map<HTTPMethod, detail::RouteNode *> trees_;
+  // every method maps to a route tree
+  std::unordered_map<HTTPMethod, detail::RouteNodePtr> trees_;
   // TODO use a param pool
 };
+
+typedef std::shared_ptr<HTTPRouter> HTTPRouterPtr;
 
 }  // namespace http
 }  // namespace ahrimq

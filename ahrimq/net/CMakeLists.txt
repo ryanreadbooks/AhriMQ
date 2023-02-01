@@ -41,6 +41,7 @@ ahrimq_create_dependency(
     "http/http_version.h"
     "http/http_router.h"
     "http/url.h"
+    "http/pages.h"
   LINKS
     pthread
     ahrimq::base

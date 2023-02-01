@@ -1,5 +1,6 @@
 #include "net/http/http_response.h"
 
+#include "base/str_utils.h"
 #include "base/time_utils.h"
 
 namespace ahrimq {
@@ -57,7 +58,7 @@ void HTTPResponse::Organize(Buffer& wbuf) const {
     wbuf.Append(colon_seperator, 2);
     for (size_t i = 0; i < values.size(); i++) {
       const std::string& value = values[i];
-      if (value.find(',') != std::string::npos) {
+      if (!StrCaseEqual(key, "date") && value.find(',') != std::string::npos) {
         wbuf.Append("\"");
         wbuf.Append(value);
         wbuf.Append("\"");
@@ -72,18 +73,20 @@ void HTTPResponse::Organize(Buffer& wbuf) const {
     wbuf.Append("\r\n");
   }
   wbuf.Append("\r\n");
-  // organize response body
+
   // TODO, may be we should send request body by another way, because response body
   // may contain file data and other stuff.
+  // organize response body content from user_buf_
+  wbuf.Append(user_buf_);
 }
 
-void HTTPResponse::AppendBuffer(const std::string& content) {
+void HTTPResponse::AppendConnBuffer(const std::string& content) {
   if (write_buf_ != nullptr) {
     write_buf_->Append(content);
   }
 }
 
-void HTTPResponse::AppendBuffer(const char* content, size_t clen) {
+void HTTPResponse::AppendConnBuffer(const char* content, size_t clen) {
   if (write_buf_ != nullptr) {
     write_buf_->Append(content, clen);
   }
@@ -98,11 +101,15 @@ void HTTPResponse::SetContentEncoding(const std::string& encoding) {
 }
 
 void HTTPResponse::MakeContentPlainText(const std::string& text) {
-  if (write_buf_ != nullptr) {
-    write_buf_->Append(text);
-    header_->Set("Content-Type", "text/plain; charset=utf-8");
-    header_->Set("Content-Length", std::to_string(text.size()));
-  }
+  user_buf_.Append(text);
+  header_->Set("Content-Type", "text/plain; charset=utf-8");
+  header_->Set("Content-Length", std::to_string(text.size()));
+}
+
+void HTTPResponse::MakeContentSimpleHTML(const std::string& html) {
+  user_buf_.Append(html);
+  header_->Set("Content-Type", "text/html; charset=utf-8");
+  header_->Set("Content-Length", std::to_string(html.size()));
 }
 
 void HTTPResponse::Redirect(const std::string& url, int code) {

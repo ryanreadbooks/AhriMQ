@@ -23,6 +23,10 @@ void StrInplaceToUpper(std::string &str);
 /// @param str 
 void StrInplaceToLower(std::string &str);
 
+/// @brief Convert all characters in string to lower case inplace, then capitalize it
+/// @param str 
+void StrInplaceToLowerCapitalize(std::string &str);
+
 /// @brief Trim all leading spaces in string.
 /// @param str 
 /// @return 
@@ -39,6 +43,8 @@ std::string StrTrimRight(const std::string &str);
 /// @param end 
 /// @return 
 bool StrEqual(const std::string &s1, const std::string &s2, size_t end);
+
+bool StrCaseEqual(const std::string& s1, const std::string& s2);
 
 bool CanConvertToInt64(const std::string &str, int64_t &val);
 

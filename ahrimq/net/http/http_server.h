@@ -55,15 +55,33 @@ class HTTPServer : public NoCopyable, public IServer {
   /// @param pattern url pattern
   /// @param callback the callback function to handle url pattern
   /// @return true on success, false on failure(already exists callback fucntion on
-  /// pattern)
+  /// pattern or other error)
   bool Get(const std::string& pattern, const HTTPCallback& callback);
+
+  /// @brief Add callback function for http HEAD method on given url pattern.
+  /// @param pattern 
+  /// @param callback 
+  /// @return 
+  bool Head(const std::string& pattern, const HTTPCallback& callback);
 
   /// @brief Add callback function for http POST method on given url pattern.
   /// @param pattern url pattern
   /// @param callback the callback function to handle url pattern
   /// @return true on success, false on failure(already exists callback fucntion on
-  /// pattern)
+  /// pattern or other error)
   bool Post(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Put(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Patch(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Delete(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Connect(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Options(const std::string& pattern, const HTTPCallback& callback);
+
+  bool Trace(const std::string& pattern, const HTTPCallback& callback);
 
  protected:
   void InitReactorHandlers() override;
@@ -87,13 +105,15 @@ class HTTPServer : public NoCopyable, public IServer {
   /// @param errcode
   void DoRequestError(HTTPConn* conn, int errcode);
 
-  void DoRouting(HTTPConn* conn);
+  std::string DoRouting(HTTPConn* conn);
 
  private:
   // HTTP config
   HTTPServer::Config config_;
   // all HTTP connections
   std::unordered_map<std::string, HTTPConnPtr> httpconns_;
+  // http router
+  HTTPRouter router_;
 };
 
 typedef std::shared_ptr<HTTPServer> HTTPServerPtr;
