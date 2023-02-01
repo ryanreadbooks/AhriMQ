@@ -132,7 +132,7 @@ static int IdentifyStatusCode(int code) {
 static bool IdentifyStatusCodeNeedCloseConnection(int code) {
   return code == StatusBadRequest || code == StatusMethodNotAllowed ||
          code == StatusRequestTimeout || code == StatusInternalServerError ||
-         code == StatusHTTPVersionNotSupported;
+         code == StatusHTTPVersionNotSupported || code == StatusContentTooLarge;
 }
 
 }  // namespace http

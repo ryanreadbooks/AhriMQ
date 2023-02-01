@@ -23,22 +23,27 @@ void HTTPHeader::Del(const std::string& key) {
   members_.erase(k);
 }
 
-std::string HTTPHeader::Get(const std::string& key) {
+std::string HTTPHeader::Get(const std::string& key) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
   if (!Has(k)) {
     return "";
   }
-  return members_[k][0];
+  try {
+    return members_.at(k)[0];
+  } catch (std::exception& ex) {
+    return "";
+  }
 }
 
-std::vector<std::string> HTTPHeader::Values(const std::string& key) {
+std::vector<std::string> HTTPHeader::Values(const std::string& key) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  if (!Has(k)) {
+  try {
+    return members_.at(k);
+  } catch (std::exception& ex) {
     return {};
   }
-  return members_[k];
 }
 
 void HTTPHeader::Set(const std::string& key, const std::string& value) {
@@ -70,43 +75,60 @@ void HTTPHeader::Clear() {
 }
 
 bool HTTPHeader::Has(const std::string& key) const {
-  return members_.count(key) != 0;
-}
-
-bool HTTPHeader::Equals(const std::string& key, const std::string& target) {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  if (!Has(k)) {
-    return false;
-  }
-  return members_[k][0] == target;
+  return members_.count(k) != 0;
 }
 
-bool HTTPHeader::Equals(const std::string& key, const char* target) {
+bool HTTPHeader::Equals(const std::string& key, const std::string& target) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  if (!Has(k)) {
+  try {
+    return members_.at(k)[0] == target;
+  } catch (std::exception& ex) {
     return false;
   }
-  return members_[k][0].c_str() == target;
 }
 
-bool HTTPHeader::CaseEquals(const std::string& key, const std::string& target) {
+bool HTTPHeader::Equals(const std::string& key, const char* target) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  if (!Has(k)) {
+  try {
+    return members_.at(k)[0].c_str() == target;
+  } catch (std::exception& ex) {
     return false;
   }
-  return strcasecmp(members_[k][0].c_str(), target.c_str()) == 0;
 }
 
-bool HTTPHeader::CaseEquals(const std::string& key, const char* target) {
+bool HTTPHeader::CaseEquals(const std::string& key,
+                            const std::string& target) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  if (!Has(k)) {
+  try {
+    return strcasecmp(members_.at(k)[0].c_str(), target.c_str()) == 0;
+  } catch (std::exception& ex) {
     return false;
   }
-  return strcasecmp(members_[k][0].c_str(), target) == 0;
+}
+
+bool HTTPHeader::CaseEquals(const std::string& key, const char* target) const {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  try {
+    return strcasecmp(members_.at(k)[0].c_str(), target) == 0;
+  } catch (std::exception& ex) {
+    return false;
+  }
+}
+
+bool HTTPHeader::Contains(const std::string& key, const std::string& target) const {
+  std::string k = key;
+  StrInplaceToLowerCapitalize(k);
+  try {
+    return members_.at(k)[0].find(target) != std::string::npos;
+  } catch (std::exception& ex) {
+    return false;
+  }
 }
 
 }  // namespace http

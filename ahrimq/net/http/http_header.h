@@ -32,12 +32,12 @@ class HTTPHeader {
   /// @brief Gets the first value associated with the given key.
   /// @param key
   /// @return
-  std::string Get(const std::string& key);
+  std::string Get(const std::string& key) const;
 
   /// @brief Gets all values associated with the given key.
   /// @param key
   /// @return
-  std::vector<std::string> Values(const std::string& key);
+  std::vector<std::string> Values(const std::string& key) const;
 
   /// @brief Set value with given key. If key already exists, the original value will
   /// be overwritten.
@@ -65,17 +65,19 @@ class HTTPHeader {
   /// @param key given key
   /// @param target target value
   /// @return
-  bool Equals(const std::string& key, const std::string& target);
+  bool Equals(const std::string& key, const std::string& target) const;
 
   /// @brief Compares the first value with the given key is equal to target.
   /// @param key given key
   /// @param target target value
   /// @return
-  bool Equals(const std::string& key, const char* target);
+  bool Equals(const std::string& key, const char* target) const;
 
-  bool CaseEquals(const std::string& key, const std::string& target);
+  bool CaseEquals(const std::string& key, const std::string& target) const;
 
-  bool CaseEquals(const std::string& key, const char* target);
+  bool CaseEquals(const std::string& key, const char* target) const;
+
+  bool Contains(const std::string& key, const std::string& target) const;
 
   /// @brief Return the underneath std::unordered_map.
   /// @return
@@ -84,7 +86,6 @@ class HTTPHeader {
   }
 
  private:
-  // FIXME: key is case-insensative
   std::unordered_map<std::string, std::vector<std::string>> members_;
 };
 

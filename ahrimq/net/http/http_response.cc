@@ -101,12 +101,14 @@ void HTTPResponse::SetContentEncoding(const std::string& encoding) {
 }
 
 void HTTPResponse::MakeContentPlainText(const std::string& text) {
+  user_buf_.Reset();
   user_buf_.Append(text);
   header_->Set("Content-Type", "text/plain; charset=utf-8");
   header_->Set("Content-Length", std::to_string(text.size()));
 }
 
 void HTTPResponse::MakeContentSimpleHTML(const std::string& html) {
+  user_buf_.Reset();
   user_buf_.Append(html);
   header_->Set("Content-Type", "text/html; charset=utf-8");
   header_->Set("Content-Length", std::to_string(html.size()));

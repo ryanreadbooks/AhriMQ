@@ -83,6 +83,14 @@ bool HTTPServer::Trace(const std::string& pattern, const HTTPCallback& callback)
 void HTTPServer::InitHTTPServer() {
   assert(reactor_ != nullptr);  // FIXME: optimize error handling
   InitReactorHandlers();
+  InitErrHandler();
+}
+
+void HTTPServer::InitErrHandler() {
+  err_handlers_[StatusBadRequest] = Default400Handler;
+  err_handlers_[StatusNotFound] = Default404Handler;
+  err_handlers_[StatusMethodNotAllowed] = Default405Handler;
+  err_handlers_[StatusInternalServerError] = Default500Handler;
 }
 
 void HTTPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
@@ -120,9 +128,13 @@ StartParsingRequestDatagramTag:
     }
     DoRequestError(httpconn.get(), retcode);
   }
+  // centralized error handler processing
+  CentrailzedStatusCodeHandling(httpconn.get());
   // send all response data out to client
   // TODO consider the situation where http request pipelining is needed
   // support http request pipelining
+  httpconn->CurrentResponseRef()->Organize(httpconn->GetWriteBuffer());
+  httpconn->CurrentRequestRef()->Reset();
   httpconn->Send();
 }
 
@@ -154,27 +166,30 @@ void HTTPServer::OnStreamWritten(ReactorConn* conn, bool& close_after) {
 void HTTPServer::DoRequest(HTTPConn* conn) {
   HTTPRequestPtr& req = conn->CurrentRequestRef();
   HTTPHeaderPtr& req_header = req->HeaderRef();
-  const URL& url = req->URLRef();
-  std::cout << "Requested url: " << url << std::endl;
-  // TODO debug the query parameters;
-  std::cout << "url query is below: \n";
-  std::cout << req->Query() << std::endl;
-  // set http response data
+
+  // handle some special request data
   HTTPResponsePtr& res = conn->CurrentResponseRef();
   HTTPHeaderPtr& res_header = res->HeaderRef();
+  // Connection behaviour
   if (!req_header->Equals("Connection", "keep-alive")) {
     res_header->Add("Connection", "close");
   } else {
     res_header->Add("Connection", "keep-alive");
   }
-  // routing
-  std::string response_page = DoRouting(conn);
-
-  // TODO: add response data
-  res->Organize(conn->GetWriteBuffer());
-  // response body
-
-  req->Reset();
+  auto m = req->Method();
+  int status_code = StatusPrivateDone;
+  if (m == HTTPMethod::Post || m == HTTPMethod::Put || m == HTTPMethod::Patch) {
+    // we should parse request body here
+    status_code = req->ParseForm();
+  }
+  if (status_code == StatusPrivateDone) {
+    // ROUTING !!!!
+    std::string response_page = DoRouting(conn);
+    // TODO: do something with response_page and add response data
+  } else {
+    // still has error
+    DoRequestError(conn, status_code);
+  }
 }
 
 // handle http request error state and create response
@@ -187,6 +202,7 @@ void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
     final_status_code = StatusInternalServerError;
   } else {
     // STATUS_CODE_HTTP_STANDARD
+    // final errcode could be 400, 413, 500, 501, 505 here
     final_status_code = errcode;
   }
   // set http response data
@@ -196,16 +212,44 @@ void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
   if (IdentifyStatusCodeNeedCloseConnection(final_status_code)) {
     res_header->Add("Connection", "close");
   }
-  // TODO do we need to add response body
+  // TODO do we need to add response body when there is a request error?
 }
 
-// TODO route tracing and call corresponding user-specific methods
 std::string HTTPServer::DoRouting(HTTPConn* conn) {
   HTTPRequestPtr& req_ref = conn->CurrentRequestRef();
   HTTPResponsePtr& res_ref = conn->CurrentResponseRef();
-  std::string path = conn->CurrentRequestRef()->URLRef().StringNoQuery();
+  std::string path = conn->CurrentRequestRef()->URLRef().StringWithQuery();
   // use http router to decide which handler callback function should be invoked.
   return router_.Route(req_ref->Method(), path, *req_ref, *res_ref);
+}
+
+void HTTPServer::CentrailzedStatusCodeHandling(HTTPConn* conn) {
+  auto req = conn->CurrentRequestRef();
+  auto res = conn->CurrentResponseRef();
+  if (err_handlers_.count(res->Status()) != 0) {
+    auto cb = err_handlers_[res->Status()];
+    cb(*req, *res);
+  }
+}
+
+void HTTPServer::Default400Handler(const HTTPRequest& req, HTTPResponse& res) {
+  res.SetStatus(StatusBadRequest);
+  res.MakeContentSimpleHTML(DEFAULT_400_PAGE);
+}
+
+void HTTPServer::Default404Handler(const HTTPRequest& req, HTTPResponse& res) {
+  res.SetStatus(StatusNotFound);
+  res.MakeContentSimpleHTML(DEFAULT_404_PAGE);
+}
+
+void HTTPServer::Default405Handler(const HTTPRequest& req, HTTPResponse& res) {
+  res.SetStatus(StatusMethodNotAllowed);
+  res.MakeContentSimpleHTML(DEFAULT_405_PAGE);
+}
+
+void HTTPServer::Default500Handler(const HTTPRequest& req, HTTPResponse& res) {
+  res.SetStatus(StatusInternalServerError);
+  res.MakeContentSimpleHTML(DEFAULT_500_PAGE);
 }
 
 }  // namespace http

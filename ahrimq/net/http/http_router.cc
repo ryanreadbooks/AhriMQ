@@ -123,7 +123,7 @@ void RouteNode::Params::Set(const std::string& key, const std::string& value) {
 std::string RouteNode::Params::Get(const std::string& key) const {
   try {
     return params_.at(key);
-  } catch (std::out_of_range& ex) {
+  } catch (std::exception& ex) {
     return "";
   }
 }
@@ -149,7 +149,6 @@ RouteNode::RouteNode(const std::string& segment, const std::string& wildcard_nam
     : segment_(segment), handler_(nullptr), wildcard_name_(wildcard_name) {}
 
 RouteNode::~RouteNode() {
-  // TODO need to free all nodes
   children_.clear();
 }
 
@@ -372,31 +371,29 @@ HTTPRouter::~HTTPRouter() {
 std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
                               const HTTPRequest& req, HTTPResponse& res) {
   // find handler function for given method and given url
+  // TODO get params from object pool
   URLParams params;
   std::string response_page = "";
   if (trees_.count(method) == 0) {
     // method not supported (405)
-    // TODO return a default 405 handler if no custom 405 handler is set
-    std::cerr << "HTTPRouter::Route 405 handler\n";
-    return Default405Handler(req, res, params);
+    res.SetStatus(StatusMethodNotAllowed);
+    return response_page;
   } else {
     const HTTPCallback& handler = trees_[method]->SearchHandler(url, params);
     if (handler == nullptr) {
       // given url is not registered (404)
-      // TODO return a default 404 handler if no custom 404 handler is set
-      std::cerr << "HTTPRouter::Route 404 handler\n";
-      return Default404Handler(req, res, params);
+      res.SetStatus(StatusNotFound);
+      return response_page;
     }
     // custom handler found
     try {
       response_page = handler(req, res, params);
     } catch (std::exception& ex) {
       // internal error
-      std::cerr << "HTTPRouter::Route 500 handler\n";
-      response_page = Default500Handler(req, res, params);
+      res.SetStatus(StatusInternalServerError);
     }
   }
-  // recover params
+  // TODO recover params
   return response_page;
 }
 
@@ -444,30 +441,6 @@ bool HTTPRouter::RegisterTrace(const std::string& url,
 bool HTTPRouter::Register(HTTPMethod method, const std::string& url,
                           const HTTPCallback& callback) {
   return trees_[method]->InsertRoute(url, callback);
-}
-
-// TODO
-std::string HTTPRouter::Default404Handler(const HTTPRequest& req, HTTPResponse& res,
-                                          const URLParams& params) {
-  res.SetStatus(StatusNotFound);
-  res.MakeContentSimpleHTML(DEFAULT_404_PAGE);
-  return "404.html";
-}
-
-// TODO
-std::string HTTPRouter::Default405Handler(const HTTPRequest& req, HTTPResponse& res,
-                                          const URLParams& params) {
-  res.SetStatus(StatusMethodNotAllowed);
-  res.MakeContentSimpleHTML(DEFAULT_405_PAGE);
-  return "405.html";
-}
-
-// TODO
-std::string HTTPRouter::Default500Handler(const HTTPRequest& req, HTTPResponse& res,
-                                          const URLParams& params) {
-  res.SetStatus(StatusInternalServerError);
-  res.MakeContentSimpleHTML(DEFAULT_500_PAGE);
-  return "500.html";
 }
 
 }  // namespace http

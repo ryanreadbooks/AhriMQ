@@ -10,7 +10,6 @@
 namespace ahrimq {
 namespace http {
 
-// TODO
 /// @brief URL is a wrapper for http reqeust-url
 class URL {
  public:
@@ -63,6 +62,8 @@ class URL {
       return params_.empty();
     }
 
+    void ParseString(const std::string& str);
+
     friend std::ostream& operator<<(std::ostream& os, const Query& query);
 
    private:
@@ -92,7 +93,9 @@ class URL {
     return url_;
   }
 
-  std::string StringNoQuery() const;
+  /// @brief Return the url string without query parameters.
+  /// @return
+  std::string StringWithQuery() const;
 
   /// @brief Reset url instance
   void Reset() {

@@ -3,16 +3,22 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "buffer/buffer.h"
 #include "net/http/http_header.h"
 #include "net/http/http_method.h"
+#include "net/http/http_status.h"
 #include "net/http/http_version.h"
 #include "net/http/url.h"
 
 namespace ahrimq {
 namespace http {
 
+typedef URL::Query BodyForm;
+
+/// @brief HTTPRequest represents a http request instance.
 class HTTPRequest {
  public:
   HTTPRequest(Buffer* rbuf);
@@ -77,16 +83,28 @@ class HTTPRequest {
     return body_;
   }
 
-  /// @brief Get url query. 
-  /// @return 
+  /// @brief Get url query.
+  /// @return
   const URL::Query& Query() const {
     return url_.GetQuery();
   }
 
   /// @brief Check if url query is empty.
-  /// @return 
+  /// @return
   bool QueryEmpty() const {
     return url_.GetQuery().Empty();
+  }
+
+  /// @brief Try to parse form from request body and fill form_ member.
+  /// @return
+  int ParseForm();
+
+  BodyForm& Form() {
+    return form_;
+  }
+
+  bool FormEmpty() const {
+    return form_.Empty();
   }
 
  private:
@@ -95,6 +113,7 @@ class HTTPRequest {
   int version_;
   URL url_;
   Buffer* body_;
+  BodyForm form_;
 };
 
 typedef std::shared_ptr<HTTPRequest> HTTPRequestPtr;

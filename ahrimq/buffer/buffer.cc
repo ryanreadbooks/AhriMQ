@@ -4,7 +4,7 @@
 
 namespace ahrimq {
 
-void Buffer::Append(const Buffer& other) {
+void Buffer::Append(const Buffer &other) {
   size_t s = other.Size();
   EnsureBytesForWrite(s);
   memcpy(BeginWriteIndex(), other.BeginReadIndex(), s);
@@ -104,11 +104,11 @@ std::string Buffer::ReadStringAndForwardTill(const char *delim) {
   }
   const char *begin_read = BeginReadIndex();
   size_t offset = it - it_begin;
-  ReaderIdxForward(offset + delim_len); // skip delim
+  ReaderIdxForward(offset + delim_len);  // skip delim
   return std::string(begin_read, offset);
 }
 
-std::string Buffer::ReadStringAndForwardTill(const char *delim, bool& found) {
+std::string Buffer::ReadStringAndForwardTill(const char *delim, bool &found) {
   auto it_begin = data_.begin() + p_reader_;
   auto it_end = data_.begin() + p_writer_;
   size_t delim_len = strlen(delim);
@@ -119,7 +119,7 @@ std::string Buffer::ReadStringAndForwardTill(const char *delim, bool& found) {
   }
   const char *begin_read = BeginReadIndex();
   size_t offset = it - it_begin;
-  ReaderIdxForward(offset + delim_len); // skip delim
+  ReaderIdxForward(offset + delim_len);  // skip delim
   found = true;
   return std::string(begin_read, offset);
 }
@@ -130,6 +130,18 @@ std::vector<char> Buffer::ReadAll() {
     return {};
   }
   std::vector<char> copy;
+  copy.reserve(n);
+  copy.insert(copy.begin(), BeginReadIndex(), BeginReadIndex() + n);
+  ReaderIdxForward(n);
+  return std::move(copy);
+}
+
+std::string Buffer::ReadAllAsString() {
+  size_t n = ReadableBytes();
+  if (n == 0) {
+    return "";
+  }
+  std::string copy;
   copy.reserve(n);
   copy.insert(copy.begin(), BeginReadIndex(), BeginReadIndex() + n);
   ReaderIdxForward(n);

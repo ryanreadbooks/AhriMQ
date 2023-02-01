@@ -21,7 +21,8 @@ namespace http {
 /// @brief HTTPCallback is the callback function for handling http request.
 /// HTTPCallback will take http request instance const reference and http response
 /// instance as arguments and should return a page name as response page.
-// typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)> HTTPCallback;
+// typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)>
+// HTTPCallback;
 
 /// @brief HTTPServer implements a minimum HTTP/1.1 server
 class HTTPServer : public NoCopyable, public IServer {
@@ -59,9 +60,9 @@ class HTTPServer : public NoCopyable, public IServer {
   bool Get(const std::string& pattern, const HTTPCallback& callback);
 
   /// @brief Add callback function for http HEAD method on given url pattern.
-  /// @param pattern 
-  /// @param callback 
-  /// @return 
+  /// @param pattern
+  /// @param callback
+  /// @return
   bool Head(const std::string& pattern, const HTTPCallback& callback);
 
   /// @brief Add callback function for http POST method on given url pattern.
@@ -88,6 +89,8 @@ class HTTPServer : public NoCopyable, public IServer {
 
   void InitHTTPServer();
 
+  void InitErrHandler();
+
   void OnStreamOpen(ReactorConn* conn, bool& close_after) override;
 
   void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) override;
@@ -107,13 +110,28 @@ class HTTPServer : public NoCopyable, public IServer {
 
   std::string DoRouting(HTTPConn* conn);
 
+  void CentrailzedStatusCodeHandling(HTTPConn* conn);
+
+  static void Default400Handler(const HTTPRequest& req, HTTPResponse& res);
+
+  static void Default404Handler(const HTTPRequest& req, HTTPResponse& res);
+
+  static void Default405Handler(const HTTPRequest& req, HTTPResponse& res);
+
+  static void Default500Handler(const HTTPRequest& req, HTTPResponse& res);
+
+  static void DefaultErrHandler(const HTTPRequest& req, HTTPResponse& res);
+
  private:
+  typedef std::function<void(const HTTPRequest&, HTTPResponse&)> InternHTTPErrHandler;
   // HTTP config
   HTTPServer::Config config_;
   // all HTTP connections
   std::unordered_map<std::string, HTTPConnPtr> httpconns_;
   // http router
   HTTPRouter router_;
+  // default error status code handlers
+  std::unordered_map<int, InternHTTPErrHandler> err_handlers_;
 };
 
 typedef std::shared_ptr<HTTPServer> HTTPServerPtr;

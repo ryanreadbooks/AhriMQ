@@ -68,12 +68,10 @@ class HTTPResponse {
   /// @param clen
   void AppendConnBuffer(const char* content, size_t clen);
 
-  // FIXME we should use enum class to specify content type
   /// @brief Set response content-type.
   /// @param content_type
   void SetContentType(const std::string& content_type);
 
-  // FIXME we should use enum class to specify character encoding
   /// @brief Set response character encoding.
   /// @param encoding
   void SetContentEncoding(const std::string& encoding);

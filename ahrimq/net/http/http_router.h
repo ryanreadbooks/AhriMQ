@@ -177,15 +177,6 @@ class HTTPRouter {
   bool Register(HTTPMethod method, const std::string &url,
                 const HTTPCallback &callback);
 
-  static std::string Default404Handler(const HTTPRequest &req, HTTPResponse &res,
-                                       const URLParams &params);
-
-  static std::string Default405Handler(const HTTPRequest &req, HTTPResponse &res,
-                                       const URLParams &params);
-
-  static std::string Default500Handler(const HTTPRequest &req, HTTPResponse &res,
-                                       const URLParams &params);
-
  private:
   // every method maps to a route tree
   std::unordered_map<HTTPMethod, detail::RouteNodePtr> trees_;

@@ -166,6 +166,10 @@ class Buffer : public NoCopyable {
   /// @return
   std::vector<char> ReadAll();
 
+  /// @brief Consume all bytes in readable.
+  /// @return 
+  std::string ReadAllAsString();
+
   /// @brief Read a long integer from buffer and forward the pointer.
   /// @param step
   /// @return

@@ -29,7 +29,6 @@ class IServer {
 
   virtual void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) = 0;
 
-  // FIXME maybe this is not needed
   virtual void OnStreamWritten(ReactorConn* conn, bool& close_after) = 0;
 
  protected:

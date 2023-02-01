@@ -214,7 +214,6 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
       conn->SetMaskRead();
       conn->loop_->epoller->ModifyConn(conn);
       wbuf->Reset();
-      // TODO: is it reasonable to put write callback here?
       if (ev_write_handler_ != nullptr) {
         bool close_after = false;
         ev_write_handler_(conn, close_after);

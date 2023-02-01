@@ -43,6 +43,34 @@ void URL::Query::Clear() {
   params_.clear();
 }
 
+void URL::Query::ParseString(const std::string& str) {
+  if (str.empty()) {
+    return;
+  }
+  size_t pos = str.find('?');
+  if (pos == std::string::npos) {
+    // no '?' found in url_, then we do not need to set query_
+    return;
+  }
+  // '?' found
+  // seperated by '&'
+  std::string raw_query = str.substr(pos + 1);
+  if (raw_query.empty()) {
+    return;
+  }
+  std::vector<std::string> q;
+  // key1=value1&key2=value2&...&keyN=valueN
+  StrSplit(raw_query, '&', q);
+  // key=value
+  for (const auto& argp : q) {
+    pos = argp.find('=');
+    if (pos != std::string::npos) {
+      // set query items
+      Add(argp.substr(0, pos), argp.substr(pos + 1));
+    }
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, const URL::Query& query) {
   size_t k = 0;
   for (const auto& item : query.params_) {
@@ -66,7 +94,7 @@ URL::URL(const std::string& url) : url_(url) {
   ParseQuery();
 }
 
-std::string URL::StringNoQuery() const {
+std::string URL::StringWithQuery() const {
   if (query_.Empty()) {
     return url_;
   }
@@ -79,31 +107,7 @@ std::string URL::StringNoQuery() const {
 
 void URL::ParseQuery() {
   // we need to parse url_ member here
-  if (url_.empty()) {
-    return;
-  }
-  size_t pos = url_.find('?');
-  if (pos == std::string::npos) {
-    // no '?' found in url_, then we do not need to set query_
-    return;
-  }
-  // '?' found
-  // seperated by '&'
-  std::string raw_query = url_.substr(pos + 1);
-  if (raw_query.empty()) {
-    return;
-  }
-  std::vector<std::string> q;
-  // key1=value1&key2=value2&...&keyN=valueN
-  StrSplit(raw_query, '&', q);
-  // key=value
-  for (const auto& argp : q) {
-    pos = argp.find('=');
-    if (pos != std::string::npos) {
-      // set query items
-      query_.Add(argp.substr(0, pos), argp.substr(pos + 1));
-    }
-  }
+  query_.ParseString(url_);
 }
 
 std::ostream& operator<<(std::ostream& os, const URL& url) {

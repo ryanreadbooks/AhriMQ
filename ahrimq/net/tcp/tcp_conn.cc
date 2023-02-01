@@ -3,8 +3,11 @@
 namespace ahrimq {
 
 TCPConn::TCPConn(ReactorConn* conn) : conn_(conn) {
-  // FIXME: handle the situation where conn is nullptr
-  status_ = Status::Open;
+  if (conn != nullptr) {
+    status_ = Status::Open;
+    return;
+  }
+  status_ = Status::Closed;
 }
 
 TCPConn::~TCPConn() {
