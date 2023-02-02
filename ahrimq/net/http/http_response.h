@@ -81,24 +81,27 @@ class HTTPResponse {
   }
 
   /// @brief Convenient function to add plain text response body. Using this function
-  /// to add response body is recommended.
+  /// to add response body is recommended. Note that this function will clear
+  /// existing data in user buffer.
   /// @param text
   void MakeContentPlainText(const std::string& text);
 
   /// @brief Convenient function to add json content to response body. Using this
-  /// function to add response body is recommended.
+  /// function to add response body is recommended. Note that this function will
+  /// clear existing data in user buffer.
   /// @param json
   void MakeContentJson(const std::string& json);
 
   /// @brief Convenient function to add html content to response body. Using this
-  /// function to add response body is recommended when html content is short.
+  /// function to add response body is recommended when html content is short. Note
+  /// that this function will clear existing data in user buffer.
   /// @param html
   void MakeContentSimpleHTML(const std::string& html);
 
-  /// @brief Set response redirect.
+  /// @brief Set response redirect to new url location
   /// @param url redirected url
   /// @param code redirected status code like 3xx
-  void Redirect(const std::string& url, int code);
+  void RedirectTo(const std::string& url, int code);
   // TODO implement file and multipart response body
 
  private:

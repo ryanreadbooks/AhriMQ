@@ -114,7 +114,7 @@ void HTTPResponse::MakeContentSimpleHTML(const std::string& html) {
   header_->Set("Content-Length", std::to_string(html.size()));
 }
 
-void HTTPResponse::Redirect(const std::string& url, int code) {
+void HTTPResponse::RedirectTo(const std::string& url, int code) {
   header_->Set("Location", url);
   SetStatus(code);
 }

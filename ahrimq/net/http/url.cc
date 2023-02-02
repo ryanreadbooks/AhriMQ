@@ -6,10 +6,6 @@ namespace ahrimq {
 namespace http {
 
 void URL::Query::Add(const std::string& key, const std::string& value) {
-  if (!Has(key)) {
-    params_[key] = {value};
-    return;
-  }
   params_[key].emplace_back(value);
 }
 
@@ -18,17 +14,19 @@ void URL::Query::Set(const std::string& key, const std::string& value) {
 }
 
 std::string URL::Query::Get(const std::string& key) const {
-  if (Has(key)) {
+  try {
     return params_.at(key)[0];
+  } catch (std::exception& ex) {
+    return "";
   }
-  return "";
 }
 
 std::vector<std::string> URL::Query::Values(const std::string& key) const {
-  if (Has(key)) {
+  try {
     return params_.at(key);
+  } catch (std::exception& ex) {
+    return {};
   }
-  return {};
 }
 
 bool URL::Query::Has(const std::string& key) const {
@@ -43,30 +41,50 @@ void URL::Query::Clear() {
   params_.clear();
 }
 
-void URL::Query::ParseString(const std::string& str) {
+std::vector<std::string> URL::Query::Keys() const {
+  std::vector<std::string> r;
+  r.reserve(params_.size());
+  for (auto&& k : params_) {
+    r.emplace_back(k.first);
+  }
+  return r;
+}
+
+void URL::Query::ParseString(const std::string& str, bool body) {
   if (str.empty()) {
     return;
   }
-  size_t pos = str.find('?');
-  if (pos == std::string::npos) {
-    // no '?' found in url_, then we do not need to set query_
-    return;
-  }
-  // '?' found
-  // seperated by '&'
-  std::string raw_query = str.substr(pos + 1);
-  if (raw_query.empty()) {
-    return;
-  }
+  size_t pos;
   std::vector<std::string> q;
-  // key1=value1&key2=value2&...&keyN=valueN
-  StrSplit(raw_query, '&', q);
+  if (!body) {
+    pos = str.find('?');
+    if (pos == std::string::npos) {
+      // no '?' found in url_, then we do not need to set query_
+      return;
+    }
+    // '?' found
+    // seperated by '&'
+    std::string raw_query = str.substr(pos + 1);
+    if (raw_query.empty()) {
+      return;
+    }
+    // key1=value1&key2=value2&...&keyN=valueN
+    StrSplit(raw_query, '&', q);
+  } else {
+    StrSplit(str, '&', q);
+  }
+
   // key=value
   for (const auto& argp : q) {
     pos = argp.find('=');
     if (pos != std::string::npos) {
       // set query items
-      Add(argp.substr(0, pos), argp.substr(pos + 1));
+      // unescape the urlencoded content
+      std::string unescaped_key;
+      std::string unescaped_value;
+      URL::UnEscape(argp.substr(0, pos), unescaped_key);
+      URL::UnEscape(argp.substr(pos + 1), unescaped_value);
+      Add(unescaped_key, unescaped_value);
     }
   }
 }
@@ -113,6 +131,101 @@ void URL::ParseQuery() {
 std::ostream& operator<<(std::ostream& os, const URL& url) {
   os << url.url_;
   return os;
+}
+
+static bool RFC3986UnreservedChar(const unsigned char& ch) {
+  return OnlyDigit(ch) || OnlyHexLowercase(ch) || OnlyHexUppercase(ch) ||
+         ch == '-' || ch == '.' || ch == '_' || ch == '~';
+}
+
+bool URL::Escape(const std::string& in, std::string& out) {
+  out.clear();
+  out.reserve(in.size());
+  char buf[3] = {'%'};
+  for (size_t i = 0; i < in.size(); i++) {
+    unsigned char tmp = in[i];
+    if (RFC3986UnreservedChar(in[i])) {
+      out.push_back(in[i]);
+    } else {
+      // convert to percent-encoding
+      // char to hex string
+      ToHex(buf + 1, in[i]);
+      out.append(buf, 3);
+    }
+  }
+  return true;
+}
+
+bool URL::UnEscape(const std::string& in, std::string& out) {
+  out.clear();
+  out.reserve(in.size());
+  for (std::size_t i = 0; i < in.size(); ++i) {
+    switch (in[i]) {
+      // %xx: next two characters should be transformed
+      case '%':
+        if (i + 3 <= in.size()) {
+          unsigned int value = 0;
+          // convert the next 2 hexadecimal digits to deicmal
+          for (std::size_t j = i + 1; j <= i + 2; ++j) {
+            if (OnlyDigit(in[j])) {
+              value += in[j] - '0';
+            } else if (OnlyHexLowercase(in[j])) {
+              value += in[j] - 'a' + 10;
+            } else if (OnlyHexUppercase(in[j])) {
+              value += in[j] - 'A' + 10;
+            } else {
+              return false;
+            }
+            if (j == i + 1) {
+              value <<= 4;  // make it high 4-bit
+            }
+          }
+          // done convert %xx
+          out.push_back(static_cast<char>(value));
+          i += 2;
+        } else {
+          return false;
+        }
+        break;
+      // remain unchanged
+      case '-':
+      case '_':
+      case '.':
+      case '~':
+      case ':':
+      case '/':
+      case '?':
+      case '#':
+      case '[':
+      case ']':
+      case '@':
+      case '!':
+      case '$':
+      case '&':
+      case '\'':
+      case '(':
+      case ')':
+      case '*':
+      case ',':
+      case ';':
+      case '=':
+        out.push_back(in[i]);
+        break;
+      case '+':
+        out.push_back(' ');
+        break;
+
+      default:
+        // not alphabet and not number
+        if (!std::isalnum(in[i])) {
+          return false;
+        }
+        // remain unchanged
+        out += in[i];
+        break;
+    }
+  }
+  return true;
 }
 
 }  // namespace http

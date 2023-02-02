@@ -381,7 +381,7 @@ std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
   } else {
     const HTTPCallback& handler = trees_[method]->SearchHandler(url, params);
     if (handler == nullptr) {
-      // given url is not registered (404)
+      // given url is not registered on this method (404)
       res.SetStatus(StatusNotFound);
       return response_page;
     }

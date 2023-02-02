@@ -28,7 +28,7 @@ int HTTPRequest::ParseForm() {
       return StatusContentTooLarge;  // 413
     }
     std::string content = body_->ReadAllAsString();
-    form_.ParseString(content);
+    form_.ParseString(content, true);
     return StatusPrivateDone;
   } else if (ct == "multipart/form-data") {
     // TODO this is a little bit complicated

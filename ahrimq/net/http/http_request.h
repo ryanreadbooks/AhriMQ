@@ -99,7 +99,7 @@ class HTTPRequest {
   /// @return
   int ParseForm();
 
-  BodyForm& Form() {
+  const BodyForm& Form() const {
     return form_;
   }
 

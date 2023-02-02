@@ -62,7 +62,9 @@ class URL {
       return params_.empty();
     }
 
-    void ParseString(const std::string& str);
+    std::vector<std::string> Keys() const;
+
+    void ParseString(const std::string& str, bool body = false);
 
     friend std::ostream& operator<<(std::ostream& os, const Query& query);
 
@@ -116,6 +118,20 @@ class URL {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const URL& url);
+
+  // encode and decode url static methods
+
+  /// @brief Encode in into out.
+  /// @param in input string to be encoded
+  /// @param out encoded output string
+  /// @return
+  static bool Escape(const std::string& in, std::string& out);
+
+  /// @brief Decode in into out.
+  /// @param in input strign to be decoded
+  /// @param out decoded output string
+  /// @return
+  static bool UnEscape(const std::string& in, std::string& out);
 
  private:
   /// @brief Parse url string and set query_ member.

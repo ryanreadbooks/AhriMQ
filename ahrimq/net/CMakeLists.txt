@@ -57,3 +57,13 @@ ahrimq_add_cc_test(
     ahrimq::net
     ahrimq::buffer
 )
+
+ahrimq_add_cc_test(
+  NAME
+    url_test
+  SRCS
+    "http/url_test.cc"
+  LINKS
+    ahrimq::net
+    ahrimq::buffer
+)

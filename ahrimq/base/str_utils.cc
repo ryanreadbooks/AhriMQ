@@ -1,7 +1,7 @@
 #include "base/str_utils.h"
 
-#include <iostream>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 
 namespace ahrimq {
@@ -45,7 +45,7 @@ void StrInplaceToLower(std::string& str) {
                  [](unsigned char c) { return std::tolower(c); });
 }
 
-void StrInplaceToLowerCapitalize(std::string &str) {
+void StrInplaceToLowerCapitalize(std::string& str) {
   StrInplaceToLower(str);
   if (!str.empty()) {
     str[0] = std::toupper(str[0]);
@@ -68,7 +68,7 @@ std::string StrTrimRight(const std::string& str) {
   return std::string(str.begin(), str.begin() + idx + 1);
 }
 
-bool StrEqual(const std::string &s1, const std::string &s2, size_t end) {
+bool StrEqual(const std::string& s1, const std::string& s2, size_t end) {
   size_t l1 = s1.size();
   size_t l2 = s2.size();
   if (end > l1 || end > l2 || end == 0) {
@@ -142,6 +142,25 @@ bool CanConvertToDouble(const std::string& str, double& val) {
   } catch (const std::exception& ex) {
     return false;
   }
+}
+
+bool OnlyDigit(const unsigned char& ch) {
+  return ch >= '0' && ch <= '9';
+}
+
+bool OnlyHexLowercase(const unsigned char& ch) {
+  return ch >= 'a' && ch <= 'f';
+}
+
+bool OnlyHexUppercase(const unsigned char& ch) {
+  return ch >= 'A' && ch <= 'F';
+}
+
+void ToHex(char* buf, unsigned char c) {
+  static char hextable[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                              '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+  buf[0] = hextable[c >> 4];
+  buf[1] = hextable[c & 0x0f];
 }
 
 }  // namespace ahrimq
