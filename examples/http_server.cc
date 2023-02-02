@@ -85,10 +85,16 @@ std::string handler5(const http::HTTPRequest& req, http::HTTPResponse& res,
   return "";
 }
 
+std::string handler6(const http::HTTPRequest& req, http::HTTPResponse& res,
+                     const http::URLParams& params) {
+  res.SetStatus(http::StatusOK);
+  return "index.html";
+}
+
 int main(int argc, char** argv) {
   ahrimq::http::HTTPServerConfig config;
   config.port = 9527;
-  config.root = "/";
+  config.root = "/home/ryan/codes/AhriMQ/examples/";
 
   ahrimq::http::HTTPServer server(config);
   bool r = server.Get("/get", handler1);
@@ -96,6 +102,7 @@ int main(int argc, char** argv) {
   r = server.Get("/redirect", handler3);
   r = server.Post("/post", handler4);
   r = server.Get("/query", handler5);
+  r = server.Get("/index", handler6);
 
   server.Run();
 

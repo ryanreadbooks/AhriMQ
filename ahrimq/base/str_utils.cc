@@ -84,6 +84,10 @@ bool StrEqual(const std::string& s1, const std::string& s2, size_t end) {
   return true;
 }
 
+bool StrCaseEqual(const std::string& s1, const char* s2) {
+  return strcasecmp(s1.c_str(), s2) == 0;
+}
+
 bool StrCaseEqual(const std::string& s1, const std::string& s2) {
   return strcasecmp(s1.c_str(), s2.c_str()) == 0;
 }
@@ -161,6 +165,41 @@ void ToHex(char* buf, unsigned char c) {
                               '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
   buf[0] = hextable[c >> 4];
   buf[1] = hextable[c & 0x0f];
+}
+
+// xxx/yyy/zzz
+std::string PathJoin(const std::string& base, const std::string& location) {
+  if (base.back() == '/') {
+    return base + location;
+  }
+  return std::move(base + '/' + location);
+}
+
+void PathJoin(const std::string& base, const std::string& location,
+              std::string& out) {
+  out.clear();
+  out.reserve(base.size() + location.size() + 1);
+  out.append(base);
+  if (base.back() != '/') {
+    out.push_back('/');
+  }
+  out.append(location);
+}
+
+bool StartsWith(const std::string& str, const char* prefix) {
+  return str.find(prefix) != str.npos;
+}
+
+bool EndsWith(const std::string& str, const char* suffix) {
+  return str.rfind(suffix) != str.npos;
+}
+
+std::string FileExtension(const std::string &str) {
+  auto it = str.rfind('.');
+  if (it == str.npos) {
+    return "";
+  }
+  return str.substr(it);
 }
 
 }  // namespace ahrimq

@@ -381,6 +381,13 @@ std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
   } else {
     const HTTPCallback& handler = trees_[method]->SearchHandler(url, params);
     if (handler == nullptr) {
+      if (method == HTTPMethod::Get) {
+        // try to find in config root
+        if (url.front() == '/') {
+          return url.substr(1);
+        }
+        return url;
+      }
       // given url is not registered on this method (404)
       res.SetStatus(StatusNotFound);
       return response_page;

@@ -64,9 +64,11 @@ void Reactor::CloseConn(ReactorConn* conn) {
     conn->read_buf_->Reset();
     conn->write_buf_->Reset();
     // close(conn->fd_);  // // already done in ReactorConn::~ReactorConn
+    std::string name = conn->name_;
     conns_.erase(conn->name_);
     // FIXME reuse connection instances: if we actually reuse the connection
     // instance, we need to close(fd) and DetachConn(conn) manually
+    std::cout << "TCP connection [" << name << "] closed\n";
   }
 }
 
@@ -188,6 +190,29 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
   }
 }
 
+void Reactor::SendFileAndUpdate(ReactorConn* conn, int outfd) {
+  int infd = conn->file_state_.fd_ready_;
+  size_t offset = conn->file_state_.offset_;
+  size_t target_len = conn->file_state_.target_size_ - offset;
+  size_t file_sent_bytes = SendFile(infd, outfd, offset, target_len);
+  // update file state
+  conn->file_state_.offset_ += file_sent_bytes;
+  conn->file_state_.target_size_ -= file_sent_bytes;
+}
+
+void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
+  conn->SetMaskRead();
+  conn->loop_->epoller->ModifyConn(conn);
+  wbuf->Reset();
+  if (ev_write_handler_ != nullptr) {
+    bool close_after = false;
+    ev_write_handler_(conn, close_after);
+    if (close_after) {
+      CloseConn(conn);
+    }
+  }
+}
+
 // EPOLLOUT handler
 // this method is called in multiple thread;
 // all we do in this function is to write out all bytes in conn->write_buf_
@@ -206,26 +231,46 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
     return;
   }
   size_t n = wbuf->Size();
+  if (n == 0) {  // write buffer is all sent, by file is partially sent
+    // check file is needed to send
+    if (conn->FileNeedSending()) {
+      // send file
+      SendFileAndUpdate(conn, fd);
+      if (conn->file_state_.target_size_ == 0) {
+        // we have already send all write buffer data and file has been sent
+        InvokeWriteDoneHandler(conn, wbuf);
+        if (conn->file_state_.close_after_) {
+          close(conn->file_state_.fd_ready_);
+        }
+      }
+    }
+  }
   size_t nbytes =
       FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf->BeginReadIndex()), n);
   if (nbytes > 0) {
     if (nbytes == n) {
       // all bytes have been sent
-      conn->SetMaskRead();
-      conn->loop_->epoller->ModifyConn(conn);
-      wbuf->Reset();
-      if (ev_write_handler_ != nullptr) {
-        bool close_after = false;
-        ev_write_handler_(conn, close_after);
-        if (close_after) {
-          CloseConn(conn);
+      if (conn->FileNeedSending()) {
+        // file sending is needed
+        SendFileAndUpdate(conn, fd);
+        if (conn->file_state_.target_size_ == 0) {
+          // we have already send all write buffer data and file has been sent
+          InvokeWriteDoneHandler(conn, wbuf);
+          if (conn->file_state_.close_after_) {
+            close(conn->file_state_.fd_ready_);
+          }
         }
+      } else {
+        // we don't need to send file
+        InvokeWriteDoneHandler(conn, wbuf);
       }
     } else {
+      // write not fully sent, we have to consume partial content
       wbuf->ReaderIdxForward(nbytes);
     }
   }
   if (nbytes == 0 && wbuf->Size() != 0) {
+    // we condiser this as an invalid state
     CloseConn(conn);
     closed = true;
   }

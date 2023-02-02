@@ -78,6 +78,37 @@ size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len) {
   return total_written;
 }
 
+size_t SendFile(int infd, int outfd, size_t offset, size_t len) {
+  // we should make sure all bytes from infd is sent to outfd, unless error occurs
+  size_t total_sent = 0;
+  ssize_t bytes_sent = 0;
+  off_t cur = offset;
+  while (total_sent < len) {
+    size_t to_send = len - total_sent;
+    bytes_sent = sendfile(outfd, infd, &cur, to_send);
+    if (bytes_sent > 0) {
+      // sent ok
+      // cur is set to the offset of the byte following the last byte that was read
+      total_sent += bytes_sent;
+    } else if (bytes_sent == -1) {
+      // error occurs
+      if (errno == EINTR) {
+        continue;
+      } else {
+        break;
+      }
+    } else {
+      // bytes_sent == 0
+      break;
+    }
+  }
+  return total_sent;
+}
+
+int SetSocketOpts(int fd, int level, int optname, int val) {
+  return setsockopt(fd, level, optname, &val, sizeof(val)) == -1 ? ERR : OK;
+}
+
 int SetFdNonBlock(int fd) {
   int flags = fcntl(fd, F_GETFL);
   if (flags == -1) {

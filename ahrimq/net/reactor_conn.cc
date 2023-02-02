@@ -20,4 +20,26 @@ ReactorConn::~ReactorConn() {
     loop_->epoller->DetachConn(this);
   }
 }
+
+bool ReactorConn::PutFile(int fd, bool closeafter) {
+  file_state_.fd_ready_ = fd;
+  struct stat statbuf = {0};
+  if (fstat(fd, &statbuf) == -1) {
+    return false;
+  }
+  file_state_.target_size_ = statbuf.st_size;
+  file_state_.filesize_ = statbuf.st_size;
+  file_state_.offset_ = 0;
+  file_state_.close_after_ = closeafter;
+  return true;
+}
+
+void ReactorConn::ResetFileState() {
+  file_state_.fd_ready_ = -1;
+  file_state_.target_size_ = 0;
+  file_state_.offset_ = 0;
+  file_state_.close_after_ = false;
+  file_state_.filesize_ = 0;
+}
+
 }  // namespace ahrimq

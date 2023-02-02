@@ -46,6 +46,7 @@ ahrimq_create_dependency(
     pthread
     ahrimq::base
     ahrimq::buffer
+    ahrimq::mime
 )
 
 ahrimq_add_cc_test(

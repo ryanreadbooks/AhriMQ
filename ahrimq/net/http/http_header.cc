@@ -94,7 +94,7 @@ bool HTTPHeader::Equals(const std::string& key, const char* target) const {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
   try {
-    return members_.at(k)[0].c_str() == target;
+    return std::strcmp(members_.at(k)[0].c_str(), target) == 0;
   } catch (std::exception& ex) {
     return false;
   }

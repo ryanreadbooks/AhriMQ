@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -29,6 +30,10 @@ size_t FixedSizeReadToBuf(int fd, char *buf, size_t len);
 size_t FixedSizeReadToBuf(int fd, char *buf, size_t len, int *flag);
 
 size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len);
+
+size_t SendFile(int infd, int outfd, size_t offset, size_t len);
+
+int SetSocketOpts(int fd, int level, int optname, int val);
 
 int SetFdNonBlock(int fd);
 

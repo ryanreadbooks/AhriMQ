@@ -1,5 +1,7 @@
 #include "net/http/http_server.h"
 
+#include "mime/mime.h"
+
 using std::placeholders::_1;  // _1, _2, ...
 using std::placeholders::_2;
 using std::placeholders::_3;
@@ -130,6 +132,7 @@ StartParsingRequestDatagramTag:
   }
   // centralized error handler processing
   CentrailzedStatusCodeHandling(httpconn.get());
+
   // send all response data out to client
   // TODO consider the situation where http request pipelining is needed
   // support http request pipelining
@@ -185,11 +188,46 @@ void HTTPServer::DoRequest(HTTPConn* conn) {
   if (status_code == StatusPrivateDone) {
     // ROUTING !!!!
     std::string response_page = DoRouting(conn);
-    // TODO: do something with response_page and add response data
-  } else {
-    // still has error
-    DoRequestError(conn, status_code);
+    if (!response_page.empty()) {
+      // if response_page is not empty, we do file sending operation
+      // and any existing write buffer content should be clear to avoid confilce
+      res->UserBuffer().Reset();
+      std::string response_page_fullpath;
+      PathJoin(config_.root, response_page, response_page_fullpath);
+      // then open response page file
+      int ofd = open(response_page_fullpath.c_str(), O_RDONLY);
+      if (ofd == -1) {
+        std::cerr << "can not open file " << response_page_fullpath << ". ["
+                  << std::strerror(errno) << "]\n";
+        if (errno == ENOENT) {
+          status_code = StatusNotFound;
+        } else {
+          status_code = StatusInternalServerError;
+        }
+        goto do_request_error;
+      } else {
+        // found
+        ReactorConn* rc = conn->conn_;
+        if (rc->PutFile(ofd, false) == false) {
+          // treat it as 404
+          status_code = StatusNotFound;
+          goto do_request_error;
+        }
+        // put file ok
+        // set some corresponding response header
+        res_header->Set("Content-Length", std::to_string(rc->FileSize()));
+        // content-type
+        res->SetContentType(
+            mime::DecideMimeTypeFromExtension(response_page_fullpath));
+        // TODO: content-encoding
+        res->SetStatus(StatusOK);
+      }
+    }
+    return;
   }
+do_request_error:
+  // still has error
+  DoRequestError(conn, status_code);
 }
 
 // handle http request error state and create response

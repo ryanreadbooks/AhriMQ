@@ -44,6 +44,8 @@ std::string StrTrimRight(const std::string &str);
 /// @return
 bool StrEqual(const std::string &s1, const std::string &s2, size_t end);
 
+bool StrCaseEqual(const std::string& s1, const char* s2);
+
 bool StrCaseEqual(const std::string &s1, const std::string &s2);
 
 bool CanConvertToInt64(const std::string &str, int64_t &val);
@@ -60,7 +62,19 @@ bool OnlyHexLowercase(const unsigned char &ch);
 
 bool OnlyHexUppercase(const unsigned char &ch);
 
-void ToHex(char* buf, unsigned char c);
+void ToHex(char *buf, unsigned char c);
+
+// simple linux path joining operation
+std::string PathJoin(const std::string &base, const std::string &location);
+
+void PathJoin(const std::string &base, const std::string &location,
+              std::string &out);
+
+bool StartsWith(const std::string &str, const char *prefix);
+
+bool EndsWith(const std::string &str, const char *suffix);
+
+std::string FileExtension(const std::string &str);
 
 }  // namespace ahrimq
 

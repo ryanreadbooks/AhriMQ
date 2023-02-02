@@ -1,7 +1,10 @@
 #ifndef _REACTOR_CONN_H_
 #define _REACTOR_CONN_H_
 
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <memory>
+#include <queue>
 
 #include "base/nocopyable.h"
 #include "buffer/buffer.h"
@@ -54,6 +57,22 @@ class ReactorConn : public NoCopyable {
     write_buf_ = wbuf;
   }
 
+  /// @brief Attach a file to send every writing time.
+  /// @param fd
+  /// @param closeafter
+  /// @return
+  bool PutFile(int fd, bool closeafter = false);
+
+  void ResetFileState();
+
+  bool FileNeedSending() const {
+    return file_state_.fd_ready_ != -1 && file_state_.target_size_ > 0;
+  }
+
+  size_t FileSize() const {
+    return file_state_.filesize_;
+  }
+
  private:
   void SetMaskRead() {
     mask_ = EPOLLIN;
@@ -91,6 +110,14 @@ class ReactorConn : public NoCopyable {
   std::string name_;
   // indicate connection is being watched or not
   bool watched_ = false;
+  // support sending file when write data out
+  struct {
+    int fd_ready_;
+    size_t offset_;
+    size_t target_size_;
+    bool close_after_ = false;
+    size_t filesize_;
+  } file_state_;
 };
 
 typedef std::shared_ptr<ReactorConn> ReactorConnPtr;
