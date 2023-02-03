@@ -138,13 +138,12 @@ static bool RFC3986UnreservedChar(const unsigned char& ch) {
          ch == '-' || ch == '.' || ch == '_' || ch == '~';
 }
 
-bool URL::Escape(const std::string& in, std::string& out) {
+void URL::Escape(const std::string& in, std::string& out) {
   out.clear();
   out.reserve(in.size());
   char buf[3] = {'%'};
   for (size_t i = 0; i < in.size(); i++) {
-    unsigned char tmp = in[i];
-    if (RFC3986UnreservedChar(in[i])) {
+    if (RFC3986UnreservedChar((unsigned char)in[i])) {
       out.push_back(in[i]);
     } else {
       // convert to percent-encoding
@@ -153,7 +152,6 @@ bool URL::Escape(const std::string& in, std::string& out) {
       out.append(buf, 3);
     }
   }
-  return true;
 }
 
 bool URL::UnEscape(const std::string& in, std::string& out) {
@@ -163,7 +161,7 @@ bool URL::UnEscape(const std::string& in, std::string& out) {
     switch (in[i]) {
       // %xx: next two characters should be transformed
       case '%':
-        if (i + 3 <= in.size()) {
+        if (i + 3 <= in.size()) { // out of range
           unsigned int value = 0;
           // convert the next 2 hexadecimal digits to deicmal
           for (std::size_t j = i + 1; j <= i + 2; ++j) {
@@ -221,7 +219,7 @@ bool URL::UnEscape(const std::string& in, std::string& out) {
           return false;
         }
         // remain unchanged
-        out += in[i];
+        out.push_back(in[i]);
         break;
     }
   }

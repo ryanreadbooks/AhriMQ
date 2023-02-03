@@ -64,6 +64,10 @@ class Buffer : public NoCopyable {
     return ReadableBytes();
   }
 
+  inline bool Empty() const {
+    return p_writer_ == p_reader_;
+  }
+
   /// @brief Get the number of prependable bytes.
   /// @return
   inline size_t PrependableBytes() const {

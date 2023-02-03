@@ -102,7 +102,8 @@ class HTTPResponse {
   /// @param url redirected url
   /// @param code redirected status code like 3xx
   void RedirectTo(const std::string& url, int code);
-  // TODO implement file and multipart response body
+
+  // TODO implement and multipart response body
 
  private:
   // response status code
@@ -113,7 +114,6 @@ class HTTPResponse {
   Buffer* write_buf_;
   // buffer to store user data
   Buffer user_buf_;
-  // TODO we need body pointer to point to the response body?
 };
 
 typedef std::shared_ptr<HTTPResponse> HTTPResponsePtr;

@@ -2,6 +2,7 @@
 #define _ISERVER_H_
 
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 #include "net/reactor.h"
@@ -37,7 +38,8 @@ class IServer {
  protected:
   ReactorPtr reactor_;
   mutable std::mutex mtx_;
-  std::condition_variable cond_;
+  mutable std::condition_variable cond_;
+  std::atomic<bool> stopped_;
 };
 }  // namespace ahrimq
 

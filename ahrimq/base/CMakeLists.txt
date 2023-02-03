@@ -6,9 +6,11 @@ ahrimq_create_dependency(
   SRCS
     "str_utils.cc"
     "time_utils.cc"
+    "mutexes.cc"
   INCS
     "str_utils.h"
     "time_utils.h"
+    "mutexes.h"
     "nocopyable.h"
 )
 

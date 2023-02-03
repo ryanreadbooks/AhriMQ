@@ -74,10 +74,10 @@ void HTTPResponse::Organize(Buffer& wbuf) const {
   }
   wbuf.Append("\r\n");
 
-  // TODO, may be we should send request body by another way, because response body
-  // may contain file data and other stuff.
-  // organize response body content from user_buf_
-  wbuf.Append(user_buf_);
+  if (!user_buf_.Empty()) {
+    // organize response body content from user_buf_
+    wbuf.Append(user_buf_);
+  }
 }
 
 void HTTPResponse::AppendConnBuffer(const std::string& content) {

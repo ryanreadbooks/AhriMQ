@@ -1,5 +1,8 @@
 #include "net/http/http_server.h"
 
+#include <atomic>
+#include <chrono>
+
 #include "mime/mime.h"
 
 using std::placeholders::_1;  // _1, _2, ...
@@ -23,17 +26,22 @@ HTTPServer::HTTPServer(const HTTPServer::Config& config)
   InitHTTPServer();
 }
 
-HTTPServer::~HTTPServer() {}
+HTTPServer::~HTTPServer() {
+  stopped_.store(true, std::memory_order_relaxed);
+  reactor_.reset();
+}
 
-// TODO improve this
+// TODO improve Run and Stop protocol
 void HTTPServer::Run() {
   assert(reactor_ != nullptr);
   reactor_->React();
   reactor_->Wait();
 }
 
-// TODO improve this
-void HTTPServer::Stop() {}
+void HTTPServer::Stop() {
+  stopped_.store(true, std::memory_order_relaxed);
+  reactor_->Stop();
+}
 
 void HTTPServer::InitReactorHandlers() {
   reactor_->SetEventAcceptHandler(
@@ -83,9 +91,11 @@ bool HTTPServer::Trace(const std::string& pattern, const HTTPCallback& callback)
 }
 
 void HTTPServer::InitHTTPServer() {
-  assert(reactor_ != nullptr);  // FIXME: optimize error handling
+  assert(reactor_ != nullptr);
   InitReactorHandlers();
   InitErrHandler();
+  InitCleanup();
+  stopped_.store(false);
 }
 
 void HTTPServer::InitErrHandler() {
@@ -93,6 +103,12 @@ void HTTPServer::InitErrHandler() {
   err_handlers_[StatusNotFound] = Default404Handler;
   err_handlers_[StatusMethodNotAllowed] = Default405Handler;
   err_handlers_[StatusInternalServerError] = Default500Handler;
+}
+
+void HTTPServer::InitCleanup() {
+  std::thread th(std::bind(&HTTPServer::Cleanup, this));
+  cleanup_wrk_.swap(th);
+  cleanup_wrk_.detach();
 }
 
 void HTTPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
@@ -135,7 +151,6 @@ StartParsingRequestDatagramTag:
 
   // send all response data out to client
   // TODO consider the situation where http request pipelining is needed
-  // support http request pipelining
   httpconn->CurrentResponseRef()->Organize(httpconn->GetWriteBuffer());
   httpconn->CurrentRequestRef()->Reset();
   httpconn->Send();
@@ -195,7 +210,7 @@ void HTTPServer::DoRequest(HTTPConn* conn) {
       std::string response_page_fullpath;
       PathJoin(config_.root, response_page, response_page_fullpath);
       // then open response page file
-      int ofd = open(response_page_fullpath.c_str(), O_RDONLY);
+      int ofd = OpenFile(response_page_fullpath);
       if (ofd == -1) {
         std::cerr << "can not open file " << response_page_fullpath << ". ["
                   << std::strerror(errno) << "]\n";
@@ -243,14 +258,14 @@ void HTTPServer::DoRequestError(HTTPConn* conn, int errcode) {
     // final errcode could be 400, 413, 500, 501, 505 here
     final_status_code = errcode;
   }
-  // set http response data
+  // set http response data header, response body is handled in function
+  // CentrailzedStatusCodeHandling
   HTTPResponsePtr& res = conn->CurrentResponseRef();
   HTTPHeaderPtr& res_header = res->HeaderRef();
   res->SetStatus(final_status_code);
   if (IdentifyStatusCodeNeedCloseConnection(final_status_code)) {
     res_header->Add("Connection", "close");
   }
-  // TODO do we need to add response body when there is a request error?
 }
 
 std::string HTTPServer::DoRouting(HTTPConn* conn) {
@@ -288,6 +303,46 @@ void HTTPServer::Default405Handler(const HTTPRequest& req, HTTPResponse& res) {
 void HTTPServer::Default500Handler(const HTTPRequest& req, HTTPResponse& res) {
   res.SetStatus(StatusInternalServerError);
   res.MakeContentSimpleHTML(DEFAULT_500_PAGE);
+}
+
+int HTTPServer::OpenFile(const std::string& filename) {
+  std::lock_guard<std::mutex> lck(mtx_);
+  int fd = -1;
+  if (file_mappings_.count(filename) == 0) {
+    // can not find in cache
+    // we need to open file
+    fd = open(filename.c_str(), O_RDONLY);
+    if (fd != -1) {
+      file_mappings_.insert({filename, std::make_shared<_OpenedFileStatus>(fd)});
+    }
+  } else {
+    // in cache
+    fd = file_mappings_[filename]->fd;
+    file_mappings_[filename]->count++;
+    file_mappings_[filename]->last = GetCurrentSec();
+  }
+  return fd;
+}
+
+void HTTPServer::Cleanup() {
+  // this function works in background executing clean-up operation periodically
+  while (!stopped_) {
+    std::unique_lock<std::mutex> lck(mtx_);
+    // wait up every 10 seconds
+    cond_.wait_for(lck, std::chrono::seconds(10),
+                   [this] { return stopped_.load(); });
+    // we have lock here
+    // 1. randomly close some opened files
+    for (auto it = file_mappings_.begin(); it != file_mappings_.end();) {
+      if (it->second->NeedClose()) {
+        it = file_mappings_.erase(it);
+      } else {
+        it++;
+      }
+    }
+
+    // 2. close idle http connections
+  }
 }
 
 }  // namespace http

@@ -62,6 +62,7 @@ TCPServer::TCPServer(const TCPServer::Config& config,
 }
 
 TCPServer::~TCPServer() {
+  stopped_.store(true, std::memory_order_relaxed);
   reactor_.reset();
 }
 
@@ -71,19 +72,22 @@ void TCPServer::Run() {
   reactor_->Wait();  // will block here
 }
 
-// TODO: implement it
-void TCPServer::Stop() {}
+void TCPServer::Stop() {
+  stopped_.store(true, std::memory_order_relaxed);
+  reactor_->Stop();
+}
 
 void TCPServer::InitReactorHandlers() {
   reactor_->SetEventAcceptHandler(std::bind(&TCPServer::OnStreamOpen, this, _1, _2));
   reactor_->SetEventReadHandler(
       std::bind(&TCPServer::OnStreamReached, this, _1, _2, _3));
-  reactor_->SetEventCloseHandler(std::bind(&TCPServer::OnStreamClosed, this, _1, _2));
-  reactor_->SetEventWriteHandler(std::bind(&TCPServer::OnStreamWritten, this, _1, _2));
+  reactor_->SetEventCloseHandler(
+      std::bind(&TCPServer::OnStreamClosed, this, _1, _2));
+  reactor_->SetEventWriteHandler(
+      std::bind(&TCPServer::OnStreamWritten, this, _1, _2));
 }
 
 void TCPServer::InitTCPServer() {
-  // FIXME optimize error handling
   assert(reactor_ != nullptr);
   // set handlers
   InitReactorHandlers();

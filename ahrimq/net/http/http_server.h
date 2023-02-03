@@ -1,9 +1,11 @@
 #ifndef _HTTP_SERVER_H_
 #define _HTTP_SERVER_H_
 
+#include <atomic>
 #include <memory>
 
 #include "base/nocopyable.h"
+#include "base/time_utils.h"
 #include "net/http/http_conn.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
@@ -17,12 +19,6 @@ namespace http {
 
 #define DEFAULT_HTTP_SERVER_IP "127.0.0.1"
 #define DEFAULT_HTTP_PORT 80
-
-/// @brief HTTPCallback is the callback function for handling http request.
-/// HTTPCallback will take http request instance const reference and http response
-/// instance as arguments and should return a page name as response page.
-// typedef std::function<std::string(const HTTPRequest&, HTTPResponse&)>
-// HTTPCallback;
 
 /// @brief HTTPServer implements a minimum HTTP/1.1 server
 class HTTPServer : public NoCopyable, public IServer {
@@ -91,6 +87,8 @@ class HTTPServer : public NoCopyable, public IServer {
 
   void InitErrHandler();
 
+  void InitCleanup();
+
   void OnStreamOpen(ReactorConn* conn, bool& close_after) override;
 
   void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) override;
@@ -122,8 +120,13 @@ class HTTPServer : public NoCopyable, public IServer {
 
   static void DefaultErrHandler(const HTTPRequest& req, HTTPResponse& res);
 
+  int OpenFile(const std::string& filename);
+
+  void Cleanup();
+
  private:
-  typedef std::function<void(const HTTPRequest&, HTTPResponse&)> InternHTTPErrHandler;
+  typedef std::function<void(const HTTPRequest&, HTTPResponse&)>
+      InternHTTPErrHandler;
   // HTTP config
   HTTPServer::Config config_;
   // all HTTP connections
@@ -132,6 +135,32 @@ class HTTPServer : public NoCopyable, public IServer {
   HTTPRouter router_;
   // default error status code handlers
   std::unordered_map<int, InternHTTPErrHandler> err_handlers_;
+  // file name and its status fd
+  struct _OpenedFileStatus {
+    size_t count;
+    uint64_t last;
+    int fd;
+    _OpenedFileStatus(int f) : count(1), last(GetCurrentSec()), fd(f) {}
+
+    ~_OpenedFileStatus() {
+      if (close(fd) != -1) {
+        std::cout << "file-" << fd << " closed\n";
+      }
+    }
+
+    /// @brief Define a simple rule to close opened file. If opened file is not used
+    /// within 60 seconds, then we close it.
+    /// @return
+    bool NeedClose() {
+      return GetCurrentSec() - last >= 60;
+      ;
+    }
+  };
+  typedef std::shared_ptr<_OpenedFileStatus> _OpenedFileStatusPtr;
+
+  std::unordered_map<std::string, _OpenedFileStatusPtr> file_mappings_;
+  // cleaner worker
+  std::thread cleanup_wrk_;
 };
 
 typedef std::shared_ptr<HTTPServer> HTTPServerPtr;

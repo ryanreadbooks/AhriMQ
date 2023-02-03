@@ -39,6 +39,8 @@ class Reactor : public NoCopyable {
 
   void Wait();
 
+  void Stop();
+
   /// @brief Close given connection.
   /// @param conn
   void CloseConn(ReactorConn* conn);

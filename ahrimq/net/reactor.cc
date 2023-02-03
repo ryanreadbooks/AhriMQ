@@ -29,7 +29,9 @@ Reactor::~Reactor() {
   eventloops_[0]->epoller->DetachConn(acceptor_.get());
   acceptor_.reset();
   for (auto&& loop : eventloops_) {
-    loop->Stop();
+    if (!loop->stopped) {
+      loop->Stop();
+    }
   }
   // destroy all connections
   mtx_.lock();
@@ -57,6 +59,12 @@ void Reactor::Wait() {
   }
 }
 
+void Reactor::Stop() {
+  for (auto&& loop : eventloops_) {
+    loop->Stop();
+  }
+}
+
 void Reactor::CloseConn(ReactorConn* conn) {
   if (conn != nullptr) {
     // conn->loop_->epoller->DetachConn(conn); // already done in
@@ -75,8 +83,13 @@ void Reactor::CloseConn(ReactorConn* conn) {
 bool Reactor::InitEventLoops() {
   eventloops_.reserve((size_t)num_loop_);
   for (size_t i = 0; i < num_loop_; i++) {
-    eventloops_.push_back(std::make_shared<EventLoop>());
-    // TODO check success or not
+    try {
+      eventloops_.push_back(std::make_shared<EventLoop>());
+    } catch (std::exception& ex) {
+      std::cerr << "Reactor::InitEventLoops failed due to " << ex.what()
+                << std::endl;
+      exit(EXIT_FAILURE);
+    }
   }
   return true;
 }

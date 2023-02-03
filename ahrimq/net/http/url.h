@@ -124,8 +124,7 @@ class URL {
   /// @brief Encode in into out.
   /// @param in input string to be encoded
   /// @param out encoded output string
-  /// @return
-  static bool Escape(const std::string& in, std::string& out);
+  static void Escape(const std::string& in, std::string& out);
 
   /// @brief Decode in into out.
   /// @param in input strign to be decoded

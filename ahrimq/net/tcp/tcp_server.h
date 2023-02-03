@@ -84,7 +84,6 @@ class TCPServer : public NoCopyable, public IServer {
   void Run() override;
 
   /// @brief Stop the server.
-  // TODO implement it
   void Stop() override;
 
  protected:

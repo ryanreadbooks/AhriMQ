@@ -47,6 +47,8 @@ std::string DecideMimeTypeFromExtension(const std::string& path) {
   SCEQ1(".zip", "application/zip")
   SCEQ1(".7z", "application/x-7z-compressed")
   SCEQ1(".xml", "application/xml")
+
+  return "application/octet-stream";
 }
 
 }  // namespace mime
