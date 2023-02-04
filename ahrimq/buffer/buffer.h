@@ -213,8 +213,8 @@ class Buffer : public NoCopyable {
 
  private:
   std::vector<char> data_;
-  size_t p_reader_;
-  size_t p_writer_;
+  size_t p_reader_ = 0ul;
+  size_t p_writer_ = 0ul;
 };
 
 }  // namespace ahrimq

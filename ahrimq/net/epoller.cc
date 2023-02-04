@@ -55,7 +55,6 @@ bool Epoller::AttachConn(ReactorConn *conn) {
   int ans = -1;
   if (!conn->watched_) {
     if ((ans = epoll_ctl(epfd_, EPOLL_CTL_ADD, conn->fd_, &epev)) == 0) {
-      // std::cout << "fd = " << conn->fd << " attached\n";
       conn->watched_ = true;
     }
   } else {

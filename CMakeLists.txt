@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.5)
 project(AhriMQ)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -ggdb -Wall -Wno-unused")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -DAHRIMQ_DEBUG -ggdb -Wall -Wno-unused")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2 -Wall -Wno-unused")
-set(CMAKE_BUILD_TYPE DEBUG)
+# set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(PROJECT_ROOT_PATH ${PROJECT_SOURCE_DIR})
@@ -32,6 +32,7 @@ list(APPEND CMAKE_MODULE_PATH
 include(AhriMQHelpers)
 
 include_directories(ahrimq)
+include_directories(thirdparty)
 include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(ahrimq)
 

@@ -2,10 +2,12 @@
 #define _HTTP_RESPONSE_H_
 
 #include <memory>
+#include "thirdparty/nlohmann/json.hpp"
 
 #include "buffer/buffer.h"
 #include "net/http/http_header.h"
 #include "net/http/http_status.h"
+
 
 namespace ahrimq {
 namespace http {
@@ -91,6 +93,8 @@ class HTTPResponse {
   /// clear existing data in user buffer.
   /// @param json
   void MakeContentJson(const std::string& json);
+
+  void MakeContentJson(const nlohmann::json& json);
 
   /// @brief Convenient function to add html content to response body. Using this
   /// function to add response body is recommended when html content is short. Note

@@ -1,13 +1,13 @@
 #include "net/reactor_conn.h"
 
 namespace ahrimq {
-ReactorConn::ReactorConn(int fd, uint32_t mask, EpollEventHandler rhandler,
-                         EpollEventHandler whandler, EventLoop* loop,
+ReactorConn::ReactorConn(int fd, uint32_t mask, const EpollEventHandler& rhandler,
+                         const EpollEventHandler& whandler, EventLoop* loop,
                          std::string name)
     : fd_(fd),
       mask_(mask),
-      read_proc_(std::move(rhandler)),
-      write_proc_(std::move(whandler)),
+      read_proc_(rhandler),
+      write_proc_(whandler),
       loop_(loop),
       name_(std::move(name)) {}
 

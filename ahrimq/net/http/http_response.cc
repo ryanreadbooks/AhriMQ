@@ -107,6 +107,21 @@ void HTTPResponse::MakeContentPlainText(const std::string& text) {
   header_->Set("Content-Length", std::to_string(text.size()));
 }
 
+void HTTPResponse::MakeContentJson(const std::string& json) {
+  user_buf_.Reset();
+  user_buf_.Append(json);
+  header_->Set("Content-Type", "application/json; charset=utf-8");
+  header_->Set("Content-Length", std::to_string(json.size()));
+}
+
+void HTTPResponse::MakeContentJson(const nlohmann::json& json) {
+  user_buf_.Reset();
+  // dump json instance to string
+  user_buf_.Append(json.dump());
+  header_->Set("Content-Type", "application/json; charset=utf-8");
+  header_->Set("Content-Length", std::to_string(user_buf_.Size()));
+}
+
 void HTTPResponse::MakeContentSimpleHTML(const std::string& html) {
   user_buf_.Reset();
   user_buf_.Append(html);

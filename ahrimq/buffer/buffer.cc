@@ -24,9 +24,19 @@ void Buffer::Append(const char *value, int len) {
 }
 
 void Buffer::Reset() {
-  memset(data_.data(), 0, data_.capacity());  // is this necessary?
-  p_reader_ = 0;
-  p_writer_ = 0;
+  p_reader_ = 0ul;
+  p_writer_ = 0ul;
+}
+
+static size_t Next2Pow(size_t n) {
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n++;
+  return n;
 }
 
 void Buffer::EnsureBytesForWrite(size_t n) {
@@ -37,13 +47,14 @@ void Buffer::EnsureBytesForWrite(size_t n) {
       MoveReadableToHead();
     } else {
       // need to alloc more space
-      std::vector<char> new_place(p_writer_ + n + 2, 0);
+      size_t newsize = Next2Pow(p_writer_ + n);
+      std::vector<char> new_place(newsize);
       // log original readable size to update p_writer_ after memcpy
       size_t r = ReadableBytes();
       // discard prependable
       memcpy(new_place.data(), BeginReadIndex(), r);
       data_.swap(new_place);  // swap new and old space to save memory
-      p_reader_ = 0;
+      p_reader_ = 0ul;
       p_writer_ = r;
     }
   }

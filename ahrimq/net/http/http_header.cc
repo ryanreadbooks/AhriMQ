@@ -14,7 +14,7 @@ HTTPHeader::HTTPHeader(HTTPHeader&& other) {
 void HTTPHeader::Add(const std::string& key, const std::string& value) {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  members_[std::move(k)].emplace_back(value);
+  members_[k].emplace_back(value);
 }
 
 void HTTPHeader::Del(const std::string& key) {
@@ -49,7 +49,12 @@ std::vector<std::string> HTTPHeader::Values(const std::string& key) const {
 void HTTPHeader::Set(const std::string& key, const std::string& value) {
   std::string k = key;
   StrInplaceToLowerCapitalize(k);
-  members_[std::move(k)] = {value};
+  if (members_.count(k) == 0) {
+    members_.emplace(k, std::vector<std::string>{value});
+  } else {
+    members_[k].clear();
+    members_[k].emplace_back(value);
+  }
 }
 
 std::vector<std::string> HTTPHeader::AllFieldKeys() const {

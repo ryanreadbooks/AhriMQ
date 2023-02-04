@@ -44,14 +44,22 @@ void HTTPServer::Stop() {
 }
 
 void HTTPServer::InitReactorHandlers() {
-  reactor_->SetEventAcceptHandler(
-      std::bind(&HTTPServer::OnStreamOpen, this, _1, _2));
+  reactor_->SetEventAcceptHandler([this](ReactorConn* conn, bool allread) {
+    this->OnStreamOpen(conn, allread);
+  });
+
   reactor_->SetEventReadHandler(
-      std::bind(&HTTPServer::OnStreamReached, this, _1, _2, _3));
-  reactor_->SetEventCloseHandler(
-      std::bind(&HTTPServer::OnStreamClosed, this, _1, _2));
-  reactor_->SetEventWriteHandler(
-      std::bind(&HTTPServer::OnStreamWritten, this, _1, _2));
+      [this](ReactorConn* conn, bool allread, bool& close_after) {
+        this->OnStreamReached(conn, allread, close_after);
+      });
+
+  reactor_->SetEventCloseHandler([this](ReactorConn* conn, bool& close_after) {
+    this->OnStreamClosed(conn, close_after);
+  });
+
+  reactor_->SetEventWriteHandler([this](ReactorConn* conn, bool& close_after) {
+    this->OnStreamWritten(conn, close_after);
+  });
 }
 
 bool HTTPServer::Get(const std::string& pattern, const HTTPCallback& callback) {
@@ -115,6 +123,12 @@ void HTTPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   std::string conn_name = conn->GetName();
   // create a new http connection instance
   HTTPConnPtr httpconn = std::make_shared<HTTPConn>(conn);
+  if (httpconn == nullptr) {
+    printf("can not create http conn instance for tcp conn %s\n", conn_name.c_str());
+    // can not open http connection
+    close_after = true;
+    return;
+  }
   httpconn->SetTCPKeepAlive(config_.tcp_keepalive);
   httpconn->SetTCPKeepAlivePeriod(config_.tcp_keepalive_period);
   httpconn->SetTCPKeepAliveCount(config_.tcp_keepalive_count);
@@ -124,13 +138,27 @@ void HTTPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   mtx_.unlock();
   conn->SetReadBuffer(&httpconn->read_buf_);
   conn->SetWriteBuffer(&httpconn->write_buf_);
-  std::cout << "HTTP connection " << conn_name << " opened\n";
+#ifdef AHRIMQ_DEBUG
+  printf("HTTP connection %s opened\n", conn_name.c_str());
+#endif
 }
 
+// ATTENTION!! this method may be invoked in multiple threads
 void HTTPServer::OnStreamReached(ReactorConn* conn, bool allread,
                                  bool& close_after) {
   std::string conn_name = conn->GetName();
+  // get http connection
+  mtx_.lock();
   HTTPConnPtr httpconn = httpconns_[conn_name];
+  if (httpconn == nullptr) {
+    // can not find http connection instance in existing http connections
+    // simply close the underlying tcp connection
+    close_after = true;
+    mtx_.unlock();
+    return;
+  }
+  mtx_.unlock();
+
 StartParsingRequestDatagramTag:
   int retcode = ParseRequestDatagram(httpconn.get());
   if (retcode == StatusPrivatePending) {
@@ -156,29 +184,41 @@ StartParsingRequestDatagramTag:
   httpconn->Send();
 }
 
+// ATTENTION!! this method may be invoked in multiple threads
 void HTTPServer::OnStreamClosed(ReactorConn* conn, bool& close_after) {
   // TODO handle connection close by reusing connections
   std::string conn_name = conn->GetName();
+  mtx_.lock();
   httpconns_.erase(conn_name);
-  std::cout << "HTTP connection " << conn_name << " closed!\n";
+  mtx_.unlock();
+#ifdef AHRIMQ_DEBUG
+  printf("HTTP connection %s closed!\n", conn_name.c_str());
+#endif
 }
 
+// ATTENTION!! this method may be invoked in multiple threads
 void HTTPServer::OnStreamWritten(ReactorConn* conn, bool& close_after) {
   std::string conn_name = conn->GetName();
+  mtx_.lock();
   HTTPConnPtr httpconn = httpconns_[conn_name];
+  mtx_.unlock();
   // keepalive handling
   HTTPHeaderPtr& res_header = httpconn->CurrentResponseRef()->HeaderRef();
   if (!res_header->Has("Connection") ||
       res_header->Get("Connection") != "keep-alive") {
     // no keep-alive option used, we need to close the http connection
     close_after = true;  // let reactor help us close the underneath tcp connection
+    mtx_.lock();
     httpconns_.erase(conn_name);
+    mtx_.unlock();
   } else {
     // the http connection is kept
     httpconn->CurrentRequestRef()->Reset();
     httpconn->CurrentResponseRef()->Reset();
   }
-  std::cout << "HTTPServer::OnStreamWritten, Request and Response reset\n";
+#ifdef AHRIMQ_DEBUG
+  printf("HTTPServer::OnStreamWritten, Request and Response reset\n");
+#endif
 }
 
 void HTTPServer::DoRequest(HTTPConn* conn) {
@@ -305,6 +345,7 @@ void HTTPServer::Default500Handler(const HTTPRequest& req, HTTPResponse& res) {
   res.MakeContentSimpleHTML(DEFAULT_500_PAGE);
 }
 
+// ATTENTION!! this method may be invoked in multiple threads
 int HTTPServer::OpenFile(const std::string& filename) {
   std::lock_guard<std::mutex> lck(mtx_);
   int fd = -1;
@@ -341,7 +382,7 @@ void HTTPServer::Cleanup() {
       }
     }
 
-    // 2. close idle http connections
+    // TODO 2. close idle http connections
   }
 }
 

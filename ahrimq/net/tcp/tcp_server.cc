@@ -94,9 +94,12 @@ void TCPServer::InitTCPServer() {
 }
 
 // create TCPConn instance when this function is called
-// this function may be invoked in multiple threads?
 void TCPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   TCPConnPtr tcpconn = std::make_shared<TCPConn>(conn);
+  if (tcpconn == nullptr) {
+    close_after = true;
+    return;
+  }
   tcpconn->SetTCPNoDelay(config_.tcp_nodelay);
   tcpconn->SetTCPKeepAlive(config_.tcp_keepalive);
   tcpconn->SetTCPKeepAlivePeriod(config_.tcp_keepalive_period);
@@ -106,14 +109,21 @@ void TCPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   mtx_.unlock();
   conn->SetReadBuffer(&tcpconn->read_buf_);
   conn->SetWriteBuffer(&tcpconn->write_buf_);
-  std::cout << "TCP connection " << conn->GetName() << " opened!\n";
+#ifdef AHRIMQ_DEBUG
+  printf("TCP connection %s opened!\n", conn->GetName().c_str());
+#endif
 }
 
-// this function may be invoked in multiple threads?
+// ATTENTION!! this method may be invoked in multiple threads?
 void TCPServer::OnStreamClosed(ReactorConn* conn, bool& close_after) {
   std::string conn_name = conn->GetName();
   mtx_.lock();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
+  if (tcpconn == nullptr) {
+    close_after = true;
+    mtx_.unlock();
+    return;
+  }
   mtx_.unlock();
   tcpconn->status_ = TCPConn::Status::Closed;
   if (on_closed_cb_ != nullptr) {
@@ -125,10 +135,17 @@ void TCPServer::OnStreamClosed(ReactorConn* conn, bool& close_after) {
 }
 
 // we collect all bytes from fd buffer and invoke on_message_callback_
-// this function may be invoked in multiple threads?
+// ATTENTION!! this method may be invoked in multiple threads
 void TCPServer::OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) {
   std::string conn_name = conn->GetName();
+  mtx_.lock();
   TCPConnPtr tcpconn = tcpconns_[conn_name];
+  if (tcpconn == nullptr) {
+    close_after = true;
+    mtx_.unlock();
+    return;
+  }
+  mtx_.unlock();
   if (on_message_cb_ != nullptr) {
     if (allread) {
       on_message_cb_(tcpconn.get(), tcpconn->read_buf_);
@@ -136,7 +153,7 @@ void TCPServer::OnStreamReached(ReactorConn* conn, bool allread, bool& close_aft
   }
 }
 
-// this function may be invoked in multiple threads?
+// ATTENTION: this method may be invoked in multiple threads
 void TCPServer::OnStreamWritten(ReactorConn* conn, bool& close_after) {}
 
 }  // namespace ahrimq

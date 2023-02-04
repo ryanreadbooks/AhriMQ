@@ -3,6 +3,12 @@
 
 using namespace ahrimq;
 
+std::string home(const http::HTTPRequest& req, http::HTTPResponse& res,
+                     const http::URLParams& params) {
+  res.SetStatus(http::StatusOK);
+  return "";
+}
+
 std::string handler1(const http::HTTPRequest& req, http::HTTPResponse& res,
                      const http::URLParams& params) {
   res.MakeContentPlainText("Greetings from http server!!\n");
@@ -91,18 +97,36 @@ std::string handler6(const http::HTTPRequest& req, http::HTTPResponse& res,
   return "index.html";
 }
 
+std::string handler7(const http::HTTPRequest& req, http::HTTPResponse& res,
+                     const http::URLParams& params) {
+
+  std::unordered_map<std::string, std::string> m{
+      {"name", params.Get("name")},
+      {"id", params.Get("id")},
+  };
+
+  nlohmann::json j(m);
+  res.MakeContentJson(j);
+
+  res.SetStatus(http::StatusOK);
+  return "";
+}
+
 int main(int argc, char** argv) {
   ahrimq::http::HTTPServerConfig config;
   config.port = 9527;
   config.root = "/home/ryan/codes/AhriMQ/examples/";
+  config.n_threads = 4;
 
   ahrimq::http::HTTPServer server(config);
   bool r = server.Get("/get", handler1);
+  r = server.Get("/", home);
   r = server.Get("/get/{username}", handler2);
   r = server.Get("/redirect", handler3);
   r = server.Post("/post", handler4);
   r = server.Get("/query", handler5);
   r = server.Get("/index", handler6);
+  r = server.Get("/people/{name}/{id}", handler7);
 
   server.Run();
 

@@ -28,8 +28,8 @@ class ReactorConn : public NoCopyable {
   friend class TCPConn;
 
  public:
-  ReactorConn(int fd, uint32_t mask, EpollEventHandler rhandler,
-              EpollEventHandler whandler, EventLoop* loop, std::string name);
+  ReactorConn(int fd, uint32_t mask, const EpollEventHandler& rhandler,
+              const EpollEventHandler& whandler, EventLoop* loop, std::string name);
 
   ~ReactorConn();
 
@@ -75,7 +75,7 @@ class ReactorConn : public NoCopyable {
 
  private:
   void SetMaskRead() {
-    mask_ = EPOLLIN;
+    mask_ = EPOLLIN | EPOLLONESHOT;
   }
 
   void SetMaskWrite() {
@@ -83,40 +83,40 @@ class ReactorConn : public NoCopyable {
   }
 
   void DisableMaskWrite() {
-    mask_ = EPOLLIN;
+    mask_ = EPOLLIN | EPOLLONESHOT;
   }
 
   void SetMaskReadWrite() {
-    mask_ = EPOLLIN | EPOLLOUT;
+    mask_ = EPOLLIN | EPOLLOUT | EPOLLONESHOT;
   }
 
  private:
-  int fd_;
+  int fd_ = -1;
   // our interested events
-  uint32_t mask_;
+  uint32_t mask_ = EPOLLIN;
   // fired events
-  uint32_t events_;
+  uint32_t events_ = 0;
   // read handler: EPOLLIN
   EpollEventHandler read_proc_;
   // write handler: EPOLLOUT
   EpollEventHandler write_proc_;
   // which eventloop it belongs
-  EventLoop* loop_;
+  EventLoop* loop_ = nullptr;
   // corresponding read buffer, not owned by ReactorConn
-  Buffer* read_buf_;
+  Buffer* read_buf_ = nullptr;
   // corresponding write buffer, not owned by ReactorConn
-  Buffer* write_buf_;
+  Buffer* write_buf_ = nullptr;
   // the name of this connection
   std::string name_;
   // indicate connection is being watched or not
   bool watched_ = false;
   // support sending file when write data out
   struct {
-    int fd_ready_;
-    size_t offset_;
-    size_t target_size_;
+    int fd_ready_ = -1;
+    size_t offset_ = 0;
+    size_t target_size_ = 0;
     bool close_after_ = false;
-    size_t filesize_;
+    size_t filesize_ = 0;
   } file_state_;
 };
 

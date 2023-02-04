@@ -135,6 +135,7 @@ class HTTPServer : public NoCopyable, public IServer {
   HTTPRouter router_;
   // default error status code handlers
   std::unordered_map<int, InternHTTPErrHandler> err_handlers_;
+  
   // file name and its status fd
   struct _OpenedFileStatus {
     size_t count;
@@ -144,7 +145,7 @@ class HTTPServer : public NoCopyable, public IServer {
 
     ~_OpenedFileStatus() {
       if (close(fd) != -1) {
-        std::cout << "file-" << fd << " closed\n";
+        printf("file-%d closed\n", fd);
       }
     }
 

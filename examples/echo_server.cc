@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
 
   server.SetOnClosedCallback([&](ahrimq::TCPConn* conn) {
     if (conn->ConnClosed()) {
-      std::cout << "Connection " << conn->GetName() << " closed\n";
+      printf("Connection %s closed\n", conn->GetName().c_str());
     }
   });
 

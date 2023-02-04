@@ -1,9 +1,10 @@
 #ifndef _ISERVER_H_
 #define _ISERVER_H_
 
-#include <mutex>
+#include <signal.h>
 #include <atomic>
 #include <condition_variable>
+#include <mutex>
 
 #include "net/reactor.h"
 #include "net/reactor_conn.h"
@@ -13,7 +14,16 @@ namespace ahrimq {
 /// @brief IServer is an interface which defines a reactor-based server
 class IServer {
  public:
-  IServer(ReactorPtr reactor) : reactor_(reactor) {}
+  class Ignorer {
+   public:
+    Ignorer(int signo) {
+      ::signal(signo, SIG_IGN);
+    }
+  };
+
+ public:
+  IServer(ReactorPtr reactor)
+      : reactor_(reactor), sigpipe_ignorer_(Ignorer(SIGPIPE)) {}
 
   virtual ~IServer() {
     reactor_.reset();
@@ -28,7 +38,8 @@ class IServer {
 
   virtual void OnStreamClosed(ReactorConn* conn, bool& close_after) = 0;
 
-  virtual void OnStreamReached(ReactorConn* conn, bool allread, bool& close_after) = 0;
+  virtual void OnStreamReached(ReactorConn* conn, bool allread,
+                               bool& close_after) = 0;
 
   virtual void OnStreamWritten(ReactorConn* conn, bool& close_after) = 0;
 
@@ -39,7 +50,8 @@ class IServer {
   ReactorPtr reactor_;
   mutable std::mutex mtx_;
   mutable std::condition_variable cond_;
-  std::atomic<bool> stopped_;
+  std::atomic<bool> stopped_{true};
+  Ignorer sigpipe_ignorer_;
 };
 }  // namespace ahrimq
 

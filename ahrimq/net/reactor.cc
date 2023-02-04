@@ -44,7 +44,7 @@ void Reactor::React() {
   for (size_t i = 0; i < num_loop_; i++) {
     worker_threads_.push_back(std::thread(
         [&](int index) {
-          std::cout << "Loop-" << index << " started\n";
+          printf("Loop-%d started\n", index);
           this->eventloops_[index]->Loop();  // blocked for every thread
         },
         i));
@@ -67,16 +67,17 @@ void Reactor::Stop() {
 
 void Reactor::CloseConn(ReactorConn* conn) {
   if (conn != nullptr) {
-    // conn->loop_->epoller->DetachConn(conn); // already done in
+    // conn->loop_->epoller->DetachConn(conn); and close(conn->fd_); already done in
     // ReactorConn::~ReactorConn
-    conn->read_buf_->Reset();
-    conn->write_buf_->Reset();
-    // close(conn->fd_);  // // already done in ReactorConn::~ReactorConn
     std::string name = conn->name_;
+    mtx_.lock();
     conns_.erase(conn->name_);
+    mtx_.unlock();
     // FIXME reuse connection instances: if we actually reuse the connection
     // instance, we need to close(fd) and DetachConn(conn) manually
-    std::cout << "TCP connection [" << name << "] closed\n";
+#ifdef AHRIMQ_DEBUG
+    printf("TCP connection [%s] closed\n", name.c_str());
+#endif
   }
 }
 
@@ -113,6 +114,7 @@ bool Reactor::InitAcceptor() {
     std::cerr << "bind acceptor address failed : " << strerror(errno) << std::endl;
     return false;
   }
+
   // construct new acceptor
   acceptor_ = std::make_shared<ReactorConn>(
       lfd, EPOLLIN, std::bind(&Reactor::Acceptor, this, _1, _2), nullptr,
@@ -127,6 +129,7 @@ bool Reactor::InitAcceptor() {
   return true;
 }
 
+// ATTENTION: this method works in single thread
 void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
   // accept incoming connection(session) and process
   IPAddr4 addr;
@@ -137,42 +140,64 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
     char buf[64];
     memset(buf, 0, sizeof(buf));
     snprintf(buf, sizeof(buf), "*%s#%lu", addr.ToString().c_str(), next_conn_id_++);
-    std::string conn_name = buf;
+    std::string newconn_name(buf, std::strlen(buf));
+    // std::string newconn_name =
+    // "*" + addr.ToString() + "#" + std::to_string(next_conn_id_++);
     auto selected_loop = EventLoopSelector();
+
     // FIXME: reuse conn instance from connection pool
-    ReactorConnPtr conn = std::make_shared<ReactorConn>(
-        remote_fd, EPOLLIN, std::bind(&Reactor::Reader, this, _1, _2),
-        std::bind(&Reactor::Writer, this, _1, _2), selected_loop, conn_name);
-    if (conn != nullptr) {
+    auto reader = [this](ReactorConn* incomming_conn, bool& closed) {
+      this->Reader(incomming_conn, closed);
+    };
+    auto writer = [this](ReactorConn* incomming_conn, bool& closed) {
+      this->Writer(incomming_conn, closed);
+    };
+
+    ReactorConnPtr newconn =
+        std::make_shared<ReactorConn>(remote_fd, EPOLLIN | EPOLLONESHOT, reader,
+                                      writer, selected_loop, newconn_name);
+    if (newconn != nullptr) {
       SetFdNonBlock(remote_fd);
       // attach new session into epoll
       if (ev_accept_handler_ != nullptr) {
         // in accept handler, we should set conn's read_buf and write_buf pointer
         bool close_after = false;
-        ev_accept_handler_(conn.get(), close_after);
+        ev_accept_handler_(newconn.get(), close_after);
+        if (close_after) {
+          CloseConn(newconn.get());
+        }
       }
-      if (selected_loop->epoller->AttachConn(conn.get())) {
-        conn->watched_ = true;
-        conns_[conn_name] = conn;
+      if (selected_loop->epoller->AttachConn(newconn.get())) {
+        newconn->watched_ = true;
+        mtx_.lock();
+        conns_[newconn_name] = newconn;
+        mtx_.unlock();
+#ifdef AHRIMQ_DEBUG
+        printf("TCP connection %s opened\n", newconn_name.c_str());
+#endif
       }
+    } else {
+      // can not create connection instance
+      // we need to close remote_fd
+      close(remote_fd);
     }
+  } else {
+    // accept failed
+    printf("can not accept due to %s\n", strerror(errno));
   }
 }
 
 // EPOLLIN handler
-// this method is called in multiple thread;
-// all we do in this function is to read fd and put data into conn->read_buf_
+// ATTENTION!!: this method is called in multiple thread
+// all we do in this method is to read fd and put data into conn->read_buf_
 void Reactor::Reader(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
   Buffer* rbuf = conn->read_buf_;
   if (rbuf == nullptr) {
-    mtx_.lock();
     std::cerr << "[" << conn->GetName() << "] rbuf is nullptr, invalid status!!\n";
-    mtx_.unlock();
     return;
   }
   char tmpbuf[kNetReadBufSize] = {0};
-  // size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf));
   int rflag = 0;
   size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf), &rflag);
   if (n == 0 && rflag == READ_SOCKET_CLOSED) {
@@ -185,7 +210,6 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
       return;
     }
   } else {
-    // TODO do more error checking
     // normal read
     // FIXME: there exists a copy cost
     rbuf->Append(tmpbuf, n);
@@ -198,6 +222,7 @@ void Reactor::Reader(ReactorConn* conn, bool& closed) {
     }
     if (conn->write_buf_->Size() > 0) {
       conn->SetMaskWrite();
+      // every thread has its own epoller
       conn->loop_->epoller->ModifyConn(conn);
     }
   }
@@ -213,8 +238,10 @@ void Reactor::SendFileAndUpdate(ReactorConn* conn, int outfd) {
   conn->file_state_.target_size_ -= file_sent_bytes;
 }
 
+// ATTENTION: this method may be invoked in multiple threads
 void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
   conn->SetMaskRead();
+  // every thread has its own epoller
   conn->loop_->epoller->ModifyConn(conn);
   wbuf->Reset();
   if (ev_write_handler_ != nullptr) {
@@ -227,19 +254,18 @@ void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
 }
 
 // EPOLLOUT handler
-// this method is called in multiple thread;
-// all we do in this function is to write out all bytes in conn->write_buf_
+// ATTENTION!!: this method is called in multiple thread;
+// all we do in this method is to write out all bytes in conn->write_buf_
 void Reactor::Writer(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
   Buffer* wbuf = conn->write_buf_;
   if (wbuf == nullptr) {
-    mtx_.lock();
     std::cerr << "[" << conn->GetName() << "] wbuf is nullptr, invalid status!!\n";
-    mtx_.unlock();
     return;
   }
   if (wbuf->Size() <= 0) {
     conn->SetMaskRead();
+    // every thread has its own epoller
     conn->loop_->epoller->ModifyConn(conn);
     return;
   }
@@ -296,7 +322,9 @@ EventLoop* Reactor::EventLoopSelector() {
   }
   uint64_t idx =
       std::uniform_int_distribution<uint64_t>(1, num_loop_ - 1)(rand_engine_);
-  std::cout << "Assigned to eventloop-" << idx << '\n';
+#ifdef AHRIMQ_DEBUG
+  printf("Assigned to eventloop-%lu\n", idx);
+#endif
   return eventloops_[idx].get();
 }
 

@@ -10,7 +10,12 @@ void URL::Query::Add(const std::string& key, const std::string& value) {
 }
 
 void URL::Query::Set(const std::string& key, const std::string& value) {
-  params_[key] = {value};
+  if (params_.count(key) == 0) {
+    params_.insert({key, {value}});
+  } else {
+    params_[key].clear();
+    params_[key].emplace_back(value);
+  }
 }
 
 std::string URL::Query::Get(const std::string& key) const {

@@ -49,20 +49,20 @@ class Reactor : public NoCopyable {
     return num_loop_;
   }
 
-  void SetEventReadHandler(ReactorReadEventHandler hdr) {
-    ev_read_handler_ = std::move(hdr);
+  void SetEventReadHandler(const ReactorReadEventHandler& hdr) {
+    ev_read_handler_ = hdr;
   }
 
-  void SetEventCloseHandler(ReactorGenericEventHandler hdr) {
-    ev_close_handler_ = std::move(hdr);
+  void SetEventCloseHandler(const ReactorGenericEventHandler& hdr) {
+    ev_close_handler_ = hdr;
   }
 
-  void SetEventWriteHandler(ReactorGenericEventHandler hdr) {
-    ev_write_handler_ = std::move(hdr);
+  void SetEventWriteHandler(const ReactorGenericEventHandler& hdr) {
+    ev_write_handler_ = hdr;
   }
 
-  void SetEventAcceptHandler(ReactorGenericEventHandler hdr) {
-    ev_accept_handler_ = std::move(hdr);
+  void SetEventAcceptHandler(const ReactorGenericEventHandler& hdr) {
+    ev_accept_handler_ = hdr;
   }
 
  private:

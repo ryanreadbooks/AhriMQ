@@ -182,7 +182,7 @@ int ParseRequestDatagram(HTTPConn* conn) {
     return StatusInternalServerError;
   }
   RequestParsingState state = RequestParsingState::RequestLine;
-  int retcode;
+  int retcode = StatusPrivateComplete;
   while (state != RequestParsingState::Invalid &&
          state != RequestParsingState::Done && retcode != StatusPrivatePending &&
          retcode != StatusPrivateInvalid) {
@@ -210,7 +210,7 @@ int ParseRequestDatagram(HTTPConn* conn) {
         conn->ResetReadBuffer();
         conn->ResetWriteBuffer();
         // TODO 2. close client connection if needed (408)
-        std::cout << "case RequestParsingState::Invalid\n";
+        printf("case RequestParsingState::Invalid\n");
         retcode = StatusPrivateInvalid;
         break;
       }
@@ -222,7 +222,7 @@ int ParseRequestDatagram(HTTPConn* conn) {
       }
       default: {
         // error, internal error
-        std::cerr << "default branch ParseRequestDatagram " << StatusInternalServerError << '\n';
+        printf("default branch ParseRequestDatagram %d \n", StatusInternalServerError);
         return StatusInternalServerError; // 500
       }
     }
