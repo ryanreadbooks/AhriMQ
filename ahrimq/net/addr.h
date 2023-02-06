@@ -1,5 +1,5 @@
-#ifndef _ADDR_H_
-#define _ADDR_H_
+#ifndef _AHRIMQ_NET_ADDR_H_
+#define _AHRIMQ_NET_ADDR_H_
 
 #include <memory>
 #include <string>
@@ -79,4 +79,4 @@ typedef std::shared_ptr<IPAddr4> IPAddr4Ptr;
 
 }  // namespace ahrimq
 
-#endif  // _ADDR_H_
+#endif  // _AHRIMQ_NET_ADDR_H_

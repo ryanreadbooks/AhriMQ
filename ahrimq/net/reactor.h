@@ -1,5 +1,5 @@
-#ifndef _REACTOR_H_
-#define _REACTOR_H_
+#ifndef _AHRIMQ_NET_REACTOR_H_
+#define _AHRIMQ_NET_REACTOR_H_
 
 #include <cassert>
 #include <condition_variable>

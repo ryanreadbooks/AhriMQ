@@ -1,5 +1,5 @@
-#ifndef _HTTP_VERSION_H_
-#define _HTTP_VERSION_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_VERSION_H_
+#define _AHRIMQ_NET_HTTP_HTTP_VERSION_H_
 
 #include <algorithm>
 #include <string>
@@ -31,4 +31,4 @@ bool HTTPVersionSupported(int v);
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_VERSION_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_VERSION_H_

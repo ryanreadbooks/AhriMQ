@@ -1,5 +1,5 @@
-#ifndef _HTTP_PAGES_H_
-#define _HTTP_PAGES_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_PAGES_H_
+#define _AHRIMQ_NET_HTTP_HTTP_PAGES_H_
 
 namespace ahrimq {
 namespace http {
@@ -58,4 +58,4 @@ static const char* DEFAULT_ERR_PAGE =
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_PAGES_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_PAGES_H_

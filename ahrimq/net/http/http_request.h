@@ -1,5 +1,5 @@
-#ifndef _HTTP_REQUEST_H_
-#define _HTTP_REQUEST_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_REQUEST_H_
+#define _AHRIMQ_NET_HTTP_HTTP_REQUEST_H_
 
 #include <memory>
 #include <string>
@@ -21,7 +21,7 @@ typedef URL::Query BodyForm;
 /// @brief HTTPRequest represents a http request instance.
 class HTTPRequest {
  public:
-  HTTPRequest(Buffer* rbuf);
+  explicit HTTPRequest(Buffer* rbuf);
 
   ~HTTPRequest() = default;
 
@@ -121,4 +121,4 @@ typedef std::shared_ptr<HTTPRequest> HTTPRequestPtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_REQUEST_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_REQUEST_H_

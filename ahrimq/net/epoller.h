@@ -1,5 +1,5 @@
-#ifndef _EPOLLER_H_
-#define _EPOLLER_H_
+#ifndef _AHRIMQ_NET_EPOLLER_H_
+#define _AHRIMQ_NET_EPOLLER_H_
 
 #include <cstdint>
 #include <memory>
@@ -58,4 +58,4 @@ typedef std::shared_ptr<Epoller> EpollerPtr;
 
 }  // namespace ahrimq
 
-#endif  // _EPOLLER_H_
+#endif  // _AHRIMQ_NET_EPOLLER_H_

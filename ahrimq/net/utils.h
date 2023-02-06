@@ -1,5 +1,5 @@
-#ifndef _NET_UTILS_H_
-#define _NET_UTILS_H_
+#ifndef _AHRIMQ_NET_UTILS_H_
+#define _AHRIMQ_NET_UTILS_H_
 
 #include <cstdint>
 #include <cstring>
@@ -87,4 +87,4 @@ static uint32_t NetToHost64(uint64_t net64) {
 
 }  // namespace ahrimq
 
-#endif  // _NET_UTILS_H_
+#endif  // _AHRIMQ_NET_UTILS_H_

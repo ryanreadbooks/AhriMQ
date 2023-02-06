@@ -1,5 +1,5 @@
-#ifndef _BASE_MUTEXES_H_
-#define _BASE_MUTEXES_H_
+#ifndef _AHRIMQ_BASE_MUTEXES_H_
+#define _AHRIMQ_BASE_MUTEXES_H_
 #include <pthread.h>
 #include <semaphore.h>
 #include <cstdint>
@@ -10,7 +10,7 @@ namespace ahrimq {
 
 class Semaphore {
  public:
-  Semaphore(uint32_t count = 0);
+  explicit Semaphore(uint32_t count = 0);
 
   ~Semaphore();
 
@@ -88,4 +88,4 @@ class WriteLockGuard : public NoCopyable {
 
 }  // namespace ahrimq
 
-#endif  //_BASE_MUTEXES_H_
+#endif  //_AHRIMQ_BASE_MUTEXES_H_

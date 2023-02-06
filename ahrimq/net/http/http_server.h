@@ -1,5 +1,5 @@
-#ifndef _HTTP_SERVER_H_
-#define _HTTP_SERVER_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_SERVER_H_
+#define _AHRIMQ_NET_HTTP_HTTP_SERVER_H_
 
 #include <atomic>
 #include <memory>
@@ -38,7 +38,7 @@ class HTTPServer : public NoCopyable, public IServer {
 
   /// @brief Construct a HTTP server with given configuration.
   /// @param config
-  HTTPServer(const HTTPServer::Config& config);
+  explicit HTTPServer(const HTTPServer::Config& config);
 
   ~HTTPServer();
 
@@ -141,7 +141,7 @@ class HTTPServer : public NoCopyable, public IServer {
     size_t count;
     uint64_t last;
     int fd;
-    _OpenedFileStatus(int f) : count(1), last(GetCurrentSec()), fd(f) {}
+    explicit _OpenedFileStatus(int f) : count(1), last(GetCurrentSec()), fd(f) {}
 
     ~_OpenedFileStatus() {
       if (close(fd) != -1) {
@@ -174,4 +174,4 @@ static HTTPServer::Config defaultHTTPConfig;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_SERVER_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_SERVER_H_

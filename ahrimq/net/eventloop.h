@@ -1,5 +1,5 @@
-#ifndef _EVENTLOOP_H_
-#define _EVENTLOOP_H_
+#ifndef _AHRIMQ_NET_EVENTLOOP_H_
+#define _AHRIMQ_NET_EVENTLOOP_H_
 
 #include <atomic>
 #include <cstdint>
@@ -37,4 +37,4 @@ typedef std::shared_ptr<EventLoop> EventLoopPtr;
 
 }  // namespace ahrimq
 
-#endif  // _EVENTLOOP_H_
+#endif  // _AHRIMQ_NET_EVENTLOOP_H_

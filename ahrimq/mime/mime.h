@@ -1,5 +1,5 @@
-#ifndef _MIME_H_
-#define _MIME_H_
+#ifndef _AHRIMQ_MIME_H_
+#define _AHRIMQ_MIME_H_
 
 #include <string>
 
@@ -13,4 +13,4 @@ std::string DecideMimeTypeFromExtension(const std::string& path);
 
 }  // namespace ahrimq
 
-#endif  // _MIME_H_
+#endif  // _AHRIMQ_MIME_H_

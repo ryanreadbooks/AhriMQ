@@ -1,5 +1,5 @@
-#ifndef _BUFFER_H_
-#define _BUFFER_H_
+#ifndef _AHRIMQ_BUFFER_H_
+#define _AHRIMQ_BUFFER_H_
 
 #include <cstdint>
 #include <cstring>
@@ -219,4 +219,4 @@ class Buffer : public NoCopyable {
 
 }  // namespace ahrimq
 
-#endif  // _BUFFER_H_
+#endif  // _AHRIMQ_BUFFER_H_

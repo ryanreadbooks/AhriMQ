@@ -1,5 +1,5 @@
-#ifndef _BASE_TIME_UTILS_H_
-#define _BASE_TIME_UTILS_H_
+#ifndef _AHRIMQ_BASE_TIME_UTILS_H_
+#define _AHRIMQ_BASE_TIME_UTILS_H_
 
 #include <sys/time.h>
 #include <cstring>
@@ -48,4 +48,4 @@ static uint64_t AddSecondToNowMillSec(uint64_t seconds) {
 
 }  // namespace ahrimq
 
-#endif  // _BASE_TIME_UTILS_H_
+#endif  // _AHRIMQ_BASE_TIME_UTILS_H_

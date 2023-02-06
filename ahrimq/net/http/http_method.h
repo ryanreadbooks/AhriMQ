@@ -1,5 +1,5 @@
-#ifndef _HTTP_METHOD_H_
-#define _HTTP_METHOD_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_METHOD_H_
+#define _AHRIMQ_NET_HTTP_HTTP_METHOD_H_
 
 #include <algorithm>
 #include <string>
@@ -58,4 +58,4 @@ bool HTTPMethodSupported(const std::string& method);
 
 }  // namespace ahrimq
 
-#endif  // _HTTP_METHOD_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_METHOD_H_

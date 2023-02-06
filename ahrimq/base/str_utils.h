@@ -1,5 +1,5 @@
-#ifndef _BASE_STR_UTILS_H_
-#define _BASE_STR_UTILS_H_
+#ifndef _AHRIMQ_BASE_STR_UTILS_H_
+#define _AHRIMQ_BASE_STR_UTILS_H_
 
 #include <algorithm>
 #include <string>
@@ -78,4 +78,4 @@ std::string FileExtension(const std::string &str);
 
 }  // namespace ahrimq
 
-#endif  // _BASE_STR_UTILS_H_
+#endif  // _AHRIMQ_BASE_STR_UTILS_H_

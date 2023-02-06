@@ -1,5 +1,5 @@
-#ifndef _REACTOR_CONN_H_
-#define _REACTOR_CONN_H_
+#ifndef _AHRIMQ_NET_REACTOR_CONN_H_
+#define _AHRIMQ_NET_REACTOR_CONN_H_
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -124,4 +124,4 @@ typedef std::shared_ptr<ReactorConn> ReactorConnPtr;
 
 }  // namespace ahrimq
 
-#endif  // _REACTOR_CONN_H_
+#endif  // _AHRIMQ_NET_REACTOR_CONN_H_

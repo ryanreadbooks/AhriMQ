@@ -1,5 +1,5 @@
-#ifndef _ISERVER_H_
-#define _ISERVER_H_
+#ifndef _AHRIMQ_NET_ISERVER_H_
+#define _AHRIMQ_NET_ISERVER_H_
 
 #include <signal.h>
 #include <atomic>
@@ -16,7 +16,7 @@ class IServer {
  public:
   class Ignorer {
    public:
-    Ignorer(int signo) {
+    explicit Ignorer(int signo) {
       ::signal(signo, SIG_IGN);
     }
   };
@@ -55,4 +55,4 @@ class IServer {
 };
 }  // namespace ahrimq
 
-#endif  // _ISERVER_H_
+#endif  // _AHRIMQ_NET_ISERVER_H_

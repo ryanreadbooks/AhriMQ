@@ -1,5 +1,5 @@
-#ifndef _HTTP_ROUTER_H_
-#define _HTTP_ROUTER_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_ROUTER_H_
+#define _AHRIMQ_NET_HTTP_HTTP_ROUTER_H_
 
 #include <functional>
 #include <memory>
@@ -86,7 +86,7 @@ class RouteNode {
  public:
   RouteNode();
 
-  RouteNode(const std::string &segment);
+  explicit RouteNode(const std::string &segment);
 
   RouteNode(const std::string &segment, const std::string &wildcard_name);
 
@@ -188,4 +188,4 @@ typedef std::shared_ptr<HTTPRouter> HTTPRouterPtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_ROUTER_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_ROUTER_H_

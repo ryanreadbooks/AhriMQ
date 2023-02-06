@@ -1,5 +1,5 @@
-#ifndef _TCPSERVER_H_
-#define _TCPSERVER_H_
+#ifndef __AHRIMQ_NET_TCP_TCP_SERVER_H_
+#define __AHRIMQ_NET_TCP_TCP_SERVER_H_
 
 #include "net/iserver.h"
 #include "net/reactor.h"
@@ -59,7 +59,7 @@ class TCPServer : public NoCopyable, public IServer {
 
   /// @brief Construct a TCPServer.
   /// @param config TCPServerConfig instance
-  TCPServer(const TCPServer::Config& config);
+  explicit TCPServer(const TCPServer::Config& config);
 
   /// @brief Construct a TCPServer with message callback.
   /// @param config TCPServerConfig instance
@@ -120,4 +120,4 @@ static TCPServer::Config defaultTCPConfig;
 
 }  // namespace ahrimq
 
-#endif  // _TCPSERVER_H_
+#endif  // __AHRIMQ_NET_TCP_TCP_SERVER_H_

@@ -1,5 +1,5 @@
-#ifndef _HTTP_URL_H_
-#define _HTTP_URL_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_URL_H_
+#define _AHRIMQ_NET_HTTP_HTTP_URL_H_
 
 #include <memory>
 #include <ostream>
@@ -73,7 +73,7 @@ class URL {
   };
 
  public:
-  URL(const std::string& url = "/");
+  explicit URL(const std::string& url = "/");
 
   /// @brief Set new url string.
   /// @param s
@@ -146,4 +146,4 @@ typedef std::shared_ptr<URL> URLPtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_URL_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_URL_H_

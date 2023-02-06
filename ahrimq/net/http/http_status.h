@@ -1,5 +1,5 @@
-#ifndef _HTTP_STATUS_H_
-#define _HTTP_STATUS_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_STATUS_H_
+#define _AHRIMQ_NET_HTTP_HTTP_STATUS_H_
 
 #include <string>
 #include <unordered_map>
@@ -138,4 +138,4 @@ static bool IdentifyStatusCodeNeedCloseConnection(int code) {
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_STATUS_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_STATUS_H_

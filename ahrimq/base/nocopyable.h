@@ -1,5 +1,5 @@
-#ifndef _BASE_NOCOPYABLE_H_
-#define _BASE_NOCOPYABLE_H_
+#ifndef _AHRIMQ_BASE_NOCOPYABLE_H_
+#define _AHRIMQ_BASE_NOCOPYABLE_H_
 
 namespace ahrimq {
   
@@ -16,4 +16,4 @@ class NoCopyable {
 
 }  // namespace ahrimq
 
-#endif  // _BASE_NOCOPYABLE_H_
+#endif  // _AHRIMQ_BASE_NOCOPYABLE_H_

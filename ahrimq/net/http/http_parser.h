@@ -1,5 +1,5 @@
-#ifndef _HTTP_PARSER_H_
-#define _HTTP_PARSER_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_PARSER_H_
+#define _AHRIMQ_NET_HTTP_HTTP_PARSER_H_
 
 #include "base/str_utils.h"
 #include "buffer/buffer.h"
@@ -44,4 +44,4 @@ int ParseRequestDatagram(HTTPConn* conn);
 
 }  // namespace ahrimq
 
-#endif  // _HTTP_PARSER_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_PARSER_H_

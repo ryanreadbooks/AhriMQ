@@ -1,5 +1,5 @@
-#ifndef _HTTP_RESPONSE_H_
-#define _HTTP_RESPONSE_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_RESPONSE_H_
+#define _AHRIMQ_NET_HTTP_HTTP_RESPONSE_H_
 
 #include <memory>
 #include "thirdparty/nlohmann/json.hpp"
@@ -15,7 +15,7 @@ namespace http {
 /// @brief HTTPResponse represents a http response.
 class HTTPResponse {
  public:
-  HTTPResponse(Buffer* wbuf);
+  explicit HTTPResponse(Buffer* wbuf);
 
   HTTPHeaderPtr GetHeader() const {
     return header_;
@@ -125,4 +125,4 @@ typedef std::shared_ptr<HTTPResponse> HTTPResponsePtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_RESPONSE_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_RESPONSE_H_

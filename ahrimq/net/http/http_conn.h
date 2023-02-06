@@ -1,5 +1,5 @@
-#ifndef _HTTPCONN_H_
-#define _HTTPCONN_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_CONN_H_
+#define _AHRIMQ_NET_HTTP_HTTP_CONN_H_
 
 #include "net/http/http_parser.h"
 #include "net/http/http_request.h"
@@ -139,4 +139,4 @@ typedef std::shared_ptr<HTTPConn> HTTPConnPtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTPCONN_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_CONN_H_

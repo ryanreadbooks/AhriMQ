@@ -1,5 +1,5 @@
-#ifndef _HTTP_HEADER_H_
-#define _HTTP_HEADER_H_
+#ifndef _AHRIMQ_NET_HTTP_HTTP_HEADER_H_
+#define _AHRIMQ_NET_HTTP_HTTP_HEADER_H_
 
 #include <memory>
 #include <string>
@@ -94,4 +94,4 @@ typedef std::shared_ptr<HTTPHeader> HTTPHeaderPtr;
 }  // namespace http
 }  // namespace ahrimq
 
-#endif  // _HTTP_HEADER_H_
+#endif  // _AHRIMQ_NET_HTTP_HTTP_HEADER_H_

@@ -1,5 +1,5 @@
-#ifndef _TCPCONN_H_
-#define _TCPCONN_H_
+#ifndef _AHRIMQ_NET_TCP_TCP_CONN_H_
+#define _AHRIMQ_NET_TCP_TCP_CONN_H_
 
 #include <cstdint>
 #include <functional>
@@ -183,4 +183,4 @@ typedef std::shared_ptr<TCPConn> TCPConnPtr;
 
 }  // namespace ahrimq
 
-#endif  // _TCPCONN_H_
+#endif  // _AHRIMQ_NET_TCP_TCP_CONN_H_
