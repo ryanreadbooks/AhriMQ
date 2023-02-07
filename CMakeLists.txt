@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(AhriMQ)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -DAHRIMQ_DEBUG -ggdb -Wall -Wno-unused")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2 -Wall -Wno-unused")
 # set(CMAKE_BUILD_TYPE DEBUG)
