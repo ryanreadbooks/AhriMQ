@@ -1,17 +1,41 @@
 #ifndef _AHRIMQ_NET_HTTP_HTTP_HEADER_H_
 #define _AHRIMQ_NET_HTTP_HTTP_HEADER_H_
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "base/str_utils.h"
 
 namespace ahrimq {
 namespace http {
 
 /// @brief HTTPHeader represents a http header
 class HTTPHeader {
+  struct CaseInsensitiveHasher {
+    size_t operator()(const std::string& s) const {
+      std::string n(s);
+      StrInplaceToLower(n);
+      return std::hash<std::string>()(n);
+    }
+  };
+
+  struct CaseInsensitiveComparator {
+    bool operator()(const std::string& s1, const std::string& s2) const {
+      return strcasecmp(s1.c_str(), s2.c_str()) == 0;
+    }
+  };
+
  public:
+  // clang-format off
+  using MemberMapType = std::unordered_map<std::string, 
+                      std::vector<std::string>, 
+                      CaseInsensitiveHasher,
+                      CaseInsensitiveComparator>;
+  // clang-format on
+
   HTTPHeader() = default;
 
   HTTPHeader(const HTTPHeader&) = default;
@@ -81,12 +105,16 @@ class HTTPHeader {
 
   /// @brief Return the underneath std::unordered_map.
   /// @return
-  const std::unordered_map<std::string, std::vector<std::string>>& Members() const {
+  const MemberMapType& Members() const {
     return members_;
   }
 
+  size_t Size() const {
+    return members_.size();
+  }
+
  private:
-  std::unordered_map<std::string, std::vector<std::string>> members_;
+  MemberMapType members_;
 };
 
 typedef std::shared_ptr<HTTPHeader> HTTPHeaderPtr;

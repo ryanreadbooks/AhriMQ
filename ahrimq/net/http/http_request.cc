@@ -15,6 +15,7 @@ void HTTPRequest::Reset() {
   url_.Reset();
   body_ = nullptr;
   form_.Clear();
+  cookies_.clear();
 }
 
 int HTTPRequest::ParseForm() {

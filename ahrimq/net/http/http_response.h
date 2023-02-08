@@ -1,13 +1,14 @@
 #ifndef _AHRIMQ_NET_HTTP_HTTP_RESPONSE_H_
 #define _AHRIMQ_NET_HTTP_HTTP_RESPONSE_H_
 
+#include <list>
 #include <memory>
 #include "thirdparty/nlohmann/json.hpp"
 
 #include "buffer/buffer.h"
 #include "net/http/http_header.h"
 #include "net/http/http_status.h"
-
+#include "net/http/cookie.h"
 
 namespace ahrimq {
 namespace http {
@@ -107,6 +108,10 @@ class HTTPResponse {
   /// @param code redirected status code like 3xx
   void RedirectTo(const std::string& url, int code);
 
+  void AddCookie(const Cookie& cookie);
+
+  void AddCookie(Cookie&& cookie);
+
   // TODO implement and multipart response body
 
  private:
@@ -118,6 +123,8 @@ class HTTPResponse {
   Buffer* write_buf_;
   // buffer to store user data
   Buffer user_buf_;
+  // cookies
+  std::list<Cookie> cookies_;
 };
 
 typedef std::shared_ptr<HTTPResponse> HTTPResponsePtr;

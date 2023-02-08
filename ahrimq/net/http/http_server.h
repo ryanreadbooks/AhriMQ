@@ -141,7 +141,7 @@ class HTTPServer : public NoCopyable, public IServer {
     size_t count;
     uint64_t last;
     int fd;
-    explicit _OpenedFileStatus(int f) : count(1), last(GetCurrentSec()), fd(f) {}
+    explicit _OpenedFileStatus(int f) : count(1), last(time::GetCurrentSec()), fd(f) {}
 
     ~_OpenedFileStatus() {
       if (close(fd) != -1) {
@@ -153,7 +153,7 @@ class HTTPServer : public NoCopyable, public IServer {
     /// within 60 seconds, then we close it.
     /// @return
     bool NeedClose() {
-      return GetCurrentSec() - last >= 60;
+      return time::GetCurrentSec() - last >= 60;
       ;
     }
   };

@@ -12,6 +12,7 @@
 #include "net/http/http_status.h"
 #include "net/http/http_version.h"
 #include "net/http/url.h"
+#include "net/http/cookie.h"
 
 namespace ahrimq {
 namespace http {
@@ -107,6 +108,18 @@ class HTTPRequest {
     return form_.Empty();
   }
 
+  const std::vector<Cookie>& Cookies() const {
+    return cookies_;
+  }
+
+  std::vector<Cookie>& Cookies() {
+    return cookies_;
+  }
+
+  bool CookiesEmpty() const {
+    return cookies_.empty();
+  }
+
  private:
   HTTPHeaderPtr header_;
   HTTPMethod method_;
@@ -114,6 +127,7 @@ class HTTPRequest {
   URL url_;
   Buffer* body_;
   BodyForm form_;
+  std::vector<Cookie> cookies_;
 };
 
 typedef std::shared_ptr<HTTPRequest> HTTPRequestPtr;

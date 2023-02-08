@@ -40,7 +40,7 @@ void HTTPResponse::Reset() {
 
 void HTTPResponse::Organize(Buffer& wbuf) const {
   const static char* colon_seperator = ": ";
-  header_->Add("Date", GMTTimeNow());  // response GMT time
+  header_->Add("Date", time::GMTTimeNowString());  // response GMT time
   // response line
   char buf[64] = {0};
   std::sprintf(buf, "%s %d %s\r\n", "HTTP/1.1", status_,
@@ -70,6 +70,13 @@ void HTTPResponse::Organize(Buffer& wbuf) const {
         wbuf.Append(",");
       }
     }
+    wbuf.Append("\r\n");
+  }
+  // cookies
+  for (const auto& cookie : cookies_) {
+    wbuf.Append("Set-Cookie");
+    wbuf.Append(colon_seperator, 2);
+    cookie.Serialize(wbuf);
     wbuf.Append("\r\n");
   }
   wbuf.Append("\r\n");
@@ -132,6 +139,14 @@ void HTTPResponse::MakeContentSimpleHTML(const std::string& html) {
 void HTTPResponse::RedirectTo(const std::string& url, int code) {
   header_->Set("Location", url);
   SetStatus(code);
+}
+
+void HTTPResponse::AddCookie(const Cookie& cookie) {
+  cookies_.emplace_back(cookie);
+}
+
+void HTTPResponse::AddCookie(Cookie&& cookie) {
+  cookies_.push_back(cookie);
 }
 
 }  //  namespace http

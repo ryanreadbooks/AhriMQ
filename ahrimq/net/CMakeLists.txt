@@ -22,6 +22,7 @@ ahrimq_create_dependency(
     "http/http_version.cc"
     "http/http_router.cc"
     "http/url.cc"
+    "http/cookie.cc"
   INCS
     "addr.h"
     "epoller.h"
@@ -42,6 +43,7 @@ ahrimq_create_dependency(
     "http/http_router.h"
     "http/url.h"
     "http/pages.h"
+    "http/cookie.h"
   LINKS
     pthread
     ahrimq::base
@@ -64,6 +66,26 @@ ahrimq_add_cc_test(
     url_test
   SRCS
     "http/url_test.cc"
+  LINKS
+    ahrimq::net
+    ahrimq::buffer
+)
+
+ahrimq_add_cc_test(
+  NAME
+    http_header_test
+  SRCS
+    "http/http_header_test.cc"
+  LINKS
+    ahrimq::net
+    ahrimq::buffer
+)
+
+ahrimq_add_cc_test(
+  NAME
+    cookie_test
+  SRCS
+    "http/cookie_test.cc"
   LINKS
     ahrimq::net
     ahrimq::buffer

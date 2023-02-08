@@ -1,10 +1,11 @@
 #include "net/http/http_server.h"
+
 #include "buffer/buffer.h"
 
 using namespace ahrimq;
 
 std::string home(const http::HTTPRequest& req, http::HTTPResponse& res,
-                     const http::URLParams& params) {
+                 const http::URLParams& params) {
   res.SetStatus(http::StatusOK);
   return "";
 }
@@ -99,7 +100,6 @@ std::string handler6(const http::HTTPRequest& req, http::HTTPResponse& res,
 
 std::string handler7(const http::HTTPRequest& req, http::HTTPResponse& res,
                      const http::URLParams& params) {
-
   std::unordered_map<std::string, std::string> m{
       {"name", params.Get("name")},
       {"id", params.Get("id")},
@@ -107,8 +107,36 @@ std::string handler7(const http::HTTPRequest& req, http::HTTPResponse& res,
 
   nlohmann::json j(m);
   res.MakeContentJson(j);
-
   res.SetStatus(http::StatusOK);
+  return "";
+}
+
+// with cookies
+std::string handler8(const http::HTTPRequest& req, http::HTTPResponse& res,
+                     const http::URLParams& params) {
+  std::stringstream ss;
+  if (!req.CookiesEmpty()) {
+    // show cookie back
+    ss << "I received your cookies, they are: \n";
+    for (const auto& cookie : req.Cookies()) {
+      ss << cookie.Name() << " : " << cookie.Value() << '\n';
+    }
+  } else {
+    // set cookie
+    ahrimq::http::Cookie cookie("name", "ryan");
+    cookie.SetPath("/");
+    cookie.SetExpireAt(
+        ahrimq::time::UTCTimePoint::Now().NewAdd(ahrimq::time::Minute(1)));
+    res.AddCookie(cookie);
+
+    ahrimq::http::Cookie cookie2("nostalgia_conf", "AE86");
+    cookie2.SetPath("/");
+    cookie2.SetMaxAge(60 * 2);
+    res.AddCookie(cookie2);
+    ss << "You don't have any cookies, we send Set-Cookie to you\n";
+  }
+  res.MakeContentPlainText(ss.str());
+  res.SetStatus(200);
   return "";
 }
 
@@ -127,6 +155,7 @@ int main(int argc, char** argv) {
   r = server.Get("/query", handler5);
   r = server.Get("/index", handler6);
   r = server.Get("/people/{name}/{id}", handler7);
+  r = server.Get("/cookies", handler8);
 
   server.Run();
 

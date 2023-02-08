@@ -371,7 +371,6 @@ HTTPRouter::~HTTPRouter() {
 std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
                               const HTTPRequest& req, HTTPResponse& res) {
   // find handler function for given method and given url
-  // TODO get params from object pool
   URLParams params;
   std::string response_page = "";
   if (trees_.count(method) == 0) {
@@ -400,7 +399,6 @@ std::string HTTPRouter::Route(HTTPMethod method, const std::string& url,
       res.SetStatus(StatusInternalServerError);
     }
   }
-  // TODO recover params instance to object pool
   return response_page;
 }
 

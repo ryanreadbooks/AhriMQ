@@ -360,7 +360,7 @@ int HTTPServer::OpenFile(const std::string& filename) {
     // in cache
     fd = file_mappings_[filename]->fd;
     file_mappings_[filename]->count++;
-    file_mappings_[filename]->last = GetCurrentSec();
+    file_mappings_[filename]->last = time::GetCurrentSec();
   }
   return fd;
 }

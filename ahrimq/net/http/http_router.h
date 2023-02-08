@@ -180,7 +180,6 @@ class HTTPRouter {
  private:
   // every method maps to a route tree
   std::unordered_map<HTTPMethod, detail::RouteNodePtr> trees_;
-  // TODO use a param pool
 };
 
 typedef std::shared_ptr<HTTPRouter> HTTPRouterPtr;

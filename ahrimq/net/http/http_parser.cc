@@ -95,7 +95,12 @@ int ParseRequestHeader(HTTPConn* conn) {
       std::string field_value = std::string(where_is_colon + 1, field.end());
       field_value = StrTrimLeft(field_value);
       // FIXME field-value may be a list whose elements are seperate by comma(,)
-      header_ref->Add(field_key, field_value);
+      if (strcasecmp(field_key.c_str(), "cookie") == 0) {
+        // special handling for cookie header
+        ParseCookieString(field_value, req_ref->Cookies(), 16);
+      } else {
+        header_ref->Add(field_key, field_value);
+      }
       // continue to parse next field
       continue;
     } else {
@@ -222,8 +227,9 @@ int ParseRequestDatagram(HTTPConn* conn) {
       }
       default: {
         // error, internal error
-        printf("default branch ParseRequestDatagram %d \n", StatusInternalServerError);
-        return StatusInternalServerError; // 500
+        printf("default branch ParseRequestDatagram %d \n",
+               StatusInternalServerError);
+        return StatusInternalServerError;  // 500
       }
     }
   }

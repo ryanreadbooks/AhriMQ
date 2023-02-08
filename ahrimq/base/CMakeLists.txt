@@ -22,3 +22,12 @@ ahrimq_add_cc_test(
   LINKS
     ahrimq::base
 )
+
+ahrimq_add_cc_test(
+  NAME
+    time_utils_test
+  SRCS
+    "time_utils_test.cc"
+  LINKS
+    ahrimq::base
+)
