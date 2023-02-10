@@ -18,6 +18,8 @@ class HTTPResponse {
  public:
   explicit HTTPResponse(Buffer* wbuf);
 
+  ~HTTPResponse();
+
   HTTPHeaderPtr GetHeader() const {
     return header_;
   }

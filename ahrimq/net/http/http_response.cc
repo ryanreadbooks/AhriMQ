@@ -12,6 +12,11 @@ HTTPResponse::HTTPResponse(Buffer* wbuf)
   header_->Add("Server", "AhriMQ/1.0");
 }
 
+HTTPResponse::~HTTPResponse() {
+  user_buf_.Reset();
+  write_buf_ = nullptr;
+}
+
 void HTTPResponse::AddHeader(const std::string& key, const std::string& value) {
   header_->Add(key, value);
 }
@@ -35,7 +40,7 @@ void HTTPResponse::Reset() {
   header_->Clear();
   status_ = StatusBadRequest;
   header_->Add("Server", "AhriMQ/1.0");
-  write_buf_ = nullptr;
+  write_buf_->Reset();
 }
 
 void HTTPResponse::Organize(Buffer& wbuf) const {

@@ -2,7 +2,7 @@
 
 namespace ahrimq {
 
-TCPConn::TCPConn(ReactorConn* conn) : conn_(conn) {
+TCPConn::TCPConn(ReactorConn* conn) : read_buf_(32768), write_buf_(4096), conn_(conn) {
   if (conn != nullptr) {
     status_ = Status::Open;
     return;

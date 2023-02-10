@@ -60,6 +60,47 @@ size_t FixedSizeReadToBuf(int fd, char *buf, size_t len, int *flag) {
   return total_read;
 }
 
+size_t ReadToBuffer(int fd, Buffer &buffer, int *flag) {
+  *flag = READ_EOF_NOT_REACHED;
+  size_t total_read = 0;
+  ssize_t bytes_read = 0;
+  // we need manual controlling of Buffer index
+  static size_t kFixedSize = 4096;
+  while (true) {
+    size_t available = buffer.WritableBytes();
+    if (available < kFixedSize) {
+      buffer.EnsureBytesForWrite(kFixedSize);
+    }
+    // try to read kFixedSize bytes every time
+    bytes_read = read(fd, buffer.BeginWritePointer(), kFixedSize);
+    if (bytes_read > 0) {
+      total_read += bytes_read;
+      buffer.WriterIdxForward(bytes_read);
+    } else if (bytes_read == 0) {
+      *flag = READ_SOCKET_CLOSED;
+      break;
+    } else if (bytes_read == -1) {
+      if (errno == EINTR) {
+        continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        *flag = READ_EOF_REACHED;
+        break;
+      } else {
+        *flag = READ_PROCESS_ERROR;
+        printf("ReadToBuffer error at fd %d, %s\n", fd, strerror(errno));
+        break;
+      }
+    }
+  }
+  size_t remain = 0;
+  // try to retrieve the remaining bytes in socket read buffer
+  ioctl(fd, FIONREAD, &remain);
+  if (remain == 0 && *flag == READ_EOF_NOT_REACHED) {
+    *flag = READ_EOF_REACHED;
+  }
+  return total_read;
+}
+
 size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len) {
   size_t total_written = 0;
   ssize_t bytes_written = 0;

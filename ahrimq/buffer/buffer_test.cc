@@ -1,8 +1,77 @@
 #include "buffer.h"
 
+#include <gtest/gtest.h>
+
 #include <iostream>
 
-#include <gtest/gtest.h>
+auto show_buffer = [](ahrimq::Buffer &s) {
+  for (auto &c : s.ReadableAsString()) {
+    if (c == '\r') {
+      std::cout << "\\r";
+    } else if (c == '\n') {
+      std::cout << "\\n";
+    } else {
+      std::cout << c;
+    }
+  }
+  std::cout << std::endl;
+};
+
+TEST(BufferTest, BasicTest) {
+  ahrimq::Buffer buf(8);
+
+  std::string s5 = "hell0";
+  buf.Append(s5);
+  std::string s6 = "wonder";
+  buf.Append(s6);
+
+  char ch7[7] = {'1', '2', '3', '4', '5', '6', '7'};
+
+  EXPECT_EQ(buf.ReadableAsString(), "hell0wonder");
+  buf.Append(ch7, 7);
+  EXPECT_EQ(buf.ReadableAsString(), "hell0wonder1234567");
+
+  buf.ReaderIdxForward(14);
+  EXPECT_EQ(buf.ReadableAsString(), "4567");
+
+  std::string s7 = "qwertyu";
+
+  buf.Append(s7);
+  EXPECT_EQ(buf.ReadableAsString(), "4567qwertyu");
+
+  ahrimq::Buffer buf2(10);
+  std::string templatestr = "123456";
+  for (int i = 0; i < 6; i++) {
+    char buf[6] = {'1', '2', '3', '4', '5', '6'};
+    buf2.Append(buf, 6);
+    std::string ss = templatestr;
+    for (int j = 0; j < i; j++) {
+      ss += templatestr;
+    }
+    EXPECT_EQ(buf2.ReadableAsString(), ss);
+  }
+};
+
+TEST(BufferTest, BasicTest2) {
+  ahrimq::Buffer buf3(4);
+  for (int i = 0; i < 5; i++) {
+    char buf[5] = {'1', '2', '3', '4', '5'};
+    buf3.Append(buf, 5);
+    show_buffer(buf3);
+    if (i == 0) {
+      EXPECT_EQ(buf3.ReadableAsString(), "12345");
+    } else if (i == 1) {
+      EXPECT_EQ(buf3.ReadableAsString(), "4512345");
+    } else if (i == 2) {
+      EXPECT_EQ(buf3.ReadableAsString(), "234512345");
+    } else if (i == 3) {
+      EXPECT_EQ(buf3.ReadableAsString(), "51234512345");
+    } else if (i == 4) {
+      EXPECT_EQ(buf3.ReadableAsString(), "3451234512345");
+    }
+    buf3.ReaderIdxForward(3);
+  }
+}
 
 TEST(BufferTest, CopyTest) {
   ahrimq::Buffer buf;
@@ -10,7 +79,7 @@ TEST(BufferTest, CopyTest) {
   std::vector<char> copy;
   int n = buf.Size();
   copy.reserve(n);
-  copy.insert(copy.begin(), buf.BeginReadIndex(), buf.BeginReadIndex() + n);
+  copy.insert(copy.begin(), buf.BeginReadPointer(), buf.BeginReadPointer() + n);
   std::string s(copy.begin(), copy.end());
   ASSERT_STREQ(s.c_str(), "helloworld!!");
 }
@@ -49,7 +118,7 @@ TEST(BufferTest, TrimLeftTest) {
 }
 
 TEST(BufferTest, TrimRightTest) {
-  ahrimq::Buffer buf;
+  ahrimq::Buffer buf(64);
   buf.Append("helloworld\n\n ");
   ASSERT_EQ(buf.Size(), 13);
   buf.TrimRight();
@@ -82,30 +151,31 @@ TEST(BufferTest, TrimLeftRightTest) {
   buf.Append("\r\n                  ");
   buf.TrimLeftRight();
   ASSERT_EQ(buf.Size(), 10);
-  buf.Append("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n    ");
+  buf.Append(
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n    ");
   buf.TrimLeftRight();
   ASSERT_EQ(buf.Size(), 10 + 60);
-  ASSERT_STREQ("helloworldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", buf.ReadableAsString().c_str());
+  ASSERT_STREQ(
+      "helloworldaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      buf.ReadableAsString().c_str());
 }
 
 TEST(BufferTest, CRLFTest) {
   ahrimq::Buffer buf;
   buf.Append("\r\n");
   std::string s = buf.ReadStringAndForwardTill("\r\n");
-  if (s.empty()) {
-    std::cout << "s is empty\n";
-  }
-  std::cout << buf.ReadableAsString() << std::endl;
-  std::cout << "-------\n";
+  EXPECT_TRUE(s.empty());
 }
 
 TEST(BufferTest, AppendBufferTest) {
   ahrimq::Buffer buf;
-  buf.Append("helloworld");
+  buf.Append("helloworldxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
   ahrimq::Buffer buf2;
-  buf2.Append(", are you ok?");
+  buf2.Append(", are you ok?kkkkkkkkkkkkkkkkkkkkkkkkkkkk");
   buf.Append(buf2);
-  std::cout<< buf.ReadableAsString() << std::endl;
+  EXPECT_EQ(buf.ReadableAsString(),
+            "helloworldxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, are you "
+            "ok?kkkkkkkkkkkkkkkkkkkkkkkkkkkk");
 }
 
 int main(int argc, char **argv) {

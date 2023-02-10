@@ -65,18 +65,18 @@ void Reactor::Stop() {
   }
 }
 
-void Reactor::CloseConn(ReactorConn* conn) {
+void Reactor::CloseConnGuarded(ReactorConn* conn) {
   if (conn != nullptr) {
     // conn->loop_->epoller->DetachConn(conn); and close(conn->fd_); already done in
     // ReactorConn::~ReactorConn
-    std::string name = conn->name_;
     mtx_.lock();
+    std::string name = conn->name_;
     conns_.erase(conn->name_);
     mtx_.unlock();
     // FIXME reuse connection instances: if we actually reuse the connection
     // instance, we need to close(fd) and DetachConn(conn) manually
 #ifdef AHRIMQ_DEBUG
-    printf("TCP connection [%s] closed\n", name.c_str());
+    // printf("TCP connection [%s][fd=%d] closed\n", name.c_str(), conn->GetFd());
 #endif
   }
 }
@@ -141,8 +141,6 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
     memset(buf, 0, sizeof(buf));
     snprintf(buf, sizeof(buf), "*%s#%lu", addr.ToString().c_str(), next_conn_id_++);
     std::string newconn_name(buf, std::strlen(buf));
-    // std::string newconn_name =
-    // "*" + addr.ToString() + "#" + std::to_string(next_conn_id_++);
     auto selected_loop = EventLoopSelector();
 
     // FIXME: reuse conn instance from connection pool
@@ -164,7 +162,8 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
         bool close_after = false;
         ev_accept_handler_(newconn.get(), close_after);
         if (close_after) {
-          CloseConn(newconn.get());
+          CloseConnGuarded(newconn.get());
+          closed = true;
         }
       }
       if (selected_loop->epoller->AttachConn(newconn.get())) {
@@ -173,13 +172,16 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
         conns_[newconn_name] = newconn;
         mtx_.unlock();
 #ifdef AHRIMQ_DEBUG
-        printf("TCP connection %s opened\n", newconn_name.c_str());
+        // printf("TCP connection %s opened\n", newconn_name.c_str());
 #endif
+      } else {
+        newconn.reset();
       }
     } else {
       // can not create connection instance
       // we need to close remote_fd
       close(remote_fd);
+      closed = true;
     }
   } else {
     // accept failed
@@ -192,32 +194,43 @@ void Reactor::Acceptor(ReactorConn* conn, bool& closed) {
 // all we do in this method is to read fd and put data into conn->read_buf_
 void Reactor::Reader(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
+  if (fd == -1) {
+    closed = true;
+    return;
+  }
   Buffer* rbuf = conn->read_buf_;
   if (rbuf == nullptr) {
     std::cerr << "[" << conn->GetName() << "] rbuf is nullptr, invalid status!!\n";
     return;
   }
-  char tmpbuf[kNetReadBufSize] = {0};
   int rflag = 0;
+  char tmpbuf[kNetReadBufSize] = {0};
   size_t n = FixedSizeReadToBuf(fd, tmpbuf, sizeof(tmpbuf), &rflag);
+  // size_t n = ReadToBuffer(fd, *rbuf, &rflag);  // FIXME bugs here
   if (n == 0 && rflag == READ_SOCKET_CLOSED) {
     // connection closed
     if (ev_close_handler_ != nullptr) {
       bool close_after = false;
       ev_close_handler_(conn, close_after);
-      CloseConn(conn);
+      CloseConnGuarded(conn);
       closed = true;
       return;
     }
   } else {
-    // normal read
+    if (rflag == READ_PROCESS_ERROR) {
+      CloseConnGuarded(conn);
+      closed = true;
+      return;
+    }
     // FIXME: there exists a copy cost
     rbuf->Append(tmpbuf, n);
     if (ev_read_handler_ != nullptr) {
       bool close_after = false;
       ev_read_handler_(conn, rflag == READ_EOF_REACHED, close_after);
       if (close_after) {
-        CloseConn(conn);
+        CloseConnGuarded(conn);
+        closed = true;
+        return;
       }
     }
     if (conn->write_buf_->Size() > 0) {
@@ -239,7 +252,8 @@ void Reactor::SendFileAndUpdate(ReactorConn* conn, int outfd) {
 }
 
 // ATTENTION: this method may be invoked in multiple threads
-void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
+bool Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
+  bool closed = false;
   conn->SetMaskRead();
   // every thread has its own epoller
   conn->loop_->epoller->ModifyConn(conn);
@@ -248,9 +262,11 @@ void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
     bool close_after = false;
     ev_write_handler_(conn, close_after);
     if (close_after) {
-      CloseConn(conn);
+      CloseConnGuarded(conn);
+      closed = true;
     }
   }
+  return closed;
 }
 
 // EPOLLOUT handler
@@ -258,6 +274,10 @@ void Reactor::InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf) {
 // all we do in this method is to write out all bytes in conn->write_buf_
 void Reactor::Writer(ReactorConn* conn, bool& closed) {
   int fd = conn->fd_;
+  if (fd == -1) {
+    closed = true;
+    return;
+  }
   Buffer* wbuf = conn->write_buf_;
   if (wbuf == nullptr) {
     std::cerr << "[" << conn->GetName() << "] wbuf is nullptr, invalid status!!\n";
@@ -277,15 +297,19 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
       SendFileAndUpdate(conn, fd);
       if (conn->file_state_.target_size_ == 0) {
         // we have already send all write buffer data and file has been sent
-        InvokeWriteDoneHandler(conn, wbuf);
+        bool conn_closed = InvokeWriteDoneHandler(conn, wbuf);
         if (conn->file_state_.close_after_) {
-          close(conn->file_state_.fd_ready_);
+          close(conn->file_state_.fd_ready_);  // close file
+        }
+        if (conn_closed) {  // close remote socket
+          closed = true;
+          return;
         }
       }
     }
   }
-  size_t nbytes =
-      FixedSizeWriteFromBuf(fd, static_cast<const char*>(wbuf->BeginReadIndex()), n);
+  size_t nbytes = FixedSizeWriteFromBuf(
+      fd, static_cast<const char*>(wbuf->BeginReadPointer()), n);
   if (nbytes > 0) {
     if (nbytes == n) {
       // all bytes have been sent
@@ -294,14 +318,21 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
         SendFileAndUpdate(conn, fd);
         if (conn->file_state_.target_size_ == 0) {
           // we have already send all write buffer data and file has been sent
-          InvokeWriteDoneHandler(conn, wbuf);
+          bool conn_closed = InvokeWriteDoneHandler(conn, wbuf);
           if (conn->file_state_.close_after_) {
             close(conn->file_state_.fd_ready_);
+          }
+          if (conn_closed) {
+            closed = true;
+            return;
           }
         }
       } else {
         // we don't need to send file
-        InvokeWriteDoneHandler(conn, wbuf);
+        if (InvokeWriteDoneHandler(conn, wbuf)) {
+          closed = true;
+          return;
+        }
       }
     } else {
       // write not fully sent, we have to consume partial content
@@ -310,7 +341,7 @@ void Reactor::Writer(ReactorConn* conn, bool& closed) {
   }
   if (nbytes == 0 && wbuf->Size() != 0) {
     // we condiser this as an invalid state
-    CloseConn(conn);
+    CloseConnGuarded(conn);
     closed = true;
   }
 }
@@ -323,7 +354,7 @@ EventLoop* Reactor::EventLoopSelector() {
   uint64_t idx =
       std::uniform_int_distribution<uint64_t>(1, num_loop_ - 1)(rand_engine_);
 #ifdef AHRIMQ_DEBUG
-  printf("Assigned to eventloop-%lu\n", idx);
+  // printf("Assigned to eventloop-%lu\n", idx);
 #endif
   return eventloops_[idx].get();
 }

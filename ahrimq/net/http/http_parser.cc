@@ -94,11 +94,11 @@ int ParseRequestHeader(HTTPConn* conn) {
       std::string field_key = std::string(field.begin(), where_is_colon);
       std::string field_value = std::string(where_is_colon + 1, field.end());
       field_value = StrTrimLeft(field_value);
-      // FIXME field-value may be a list whose elements are seperate by comma(,)
       if (strcasecmp(field_key.c_str(), "cookie") == 0) {
         // special handling for cookie header
         ParseCookieString(field_value, req_ref->Cookies(), 16);
       } else {
+        // field-value may be a list whose elements are seperate by comma(,)
         header_ref->Add(field_key, field_value);
       }
       // continue to parse next field

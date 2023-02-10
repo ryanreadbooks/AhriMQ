@@ -42,7 +42,7 @@ class TCPConn : public NoCopyable {
 
   explicit TCPConn(ReactorConn* conn);
 
-  ~TCPConn();
+  virtual ~TCPConn();
 
   /// @brief retrieve all bytes from read buffer, this operation will consume all
   /// bytes in buffer

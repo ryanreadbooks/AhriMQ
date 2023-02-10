@@ -17,17 +17,14 @@ class Buffer : public NoCopyable {
  public:
   /// @brief Construct a new Buffer object.
   /// @param init_bufsize initial size of new buffer
-  explicit Buffer(size_t init_bufsize = 64)
-      : data_(init_bufsize), p_reader_(0), p_writer_(0) {}
+  explicit Buffer(size_t init_bufsize = 1024);
 
-  ~Buffer() {
-    data_.clear();
-  }
+  ~Buffer();
 
   /// @brief Get the capacity of buffer.
   /// @return
   inline size_t Capacity() const {
-    return data_.capacity();
+    return capacity_;
   }
 
   /**
@@ -77,30 +74,36 @@ class Buffer : public NoCopyable {
   /// @brief Get the pointer of array underneath buffer.
   /// @return
   inline char *BufferFront() {
-    return &data_[0];
+    return data_;
   }
 
   /// @brief Return readable bytes as std::string.
   /// @return
   std::string ReadableAsString() const {
-    return std::string(data_.data() + p_reader_, ReadableBytes());
+    return std::string(data_ + p_reader_, ReadableBytes());
+  }
+
+  /// @brief Return readable as std::string.
+  /// @return 
+  std::string Content() const {
+    return std::move(ReadableAsString());
   }
 
   /// @brief Get the pointer of the begin of readable bytes.
   /// @return
-  inline const char *BeginReadIndex() const {
-    return data_.data() + p_reader_;
+  inline const char *BeginReadPointer() const {
+    return data_ + p_reader_;
   }
 
   /// @brief Get the pointer of the begin of writable bytes.
   /// @return
-  inline char *BeginWriteIndex() {
-    return data_.data() + p_writer_;
+  inline char *BeginWritePointer() {
+    return data_ + p_writer_;
   }
 
   /// @brief Append data from another buffer.
-  /// @param other 
-  void Append(const Buffer& other);
+  /// @param other
+  void Append(const Buffer &other);
 
   /// @brief Append more value into buffer.
   /// @param value
@@ -127,11 +130,11 @@ class Buffer : public NoCopyable {
   void ReaderIdxBackward(size_t len);
 
   /// @brief Move writer pointer to the right.
-  /// @param len 
+  /// @param len
   void WriterIdxForward(size_t len);
 
   /// @brief Move writer pointer to the left.
-  /// @param len 
+  /// @param len
   void WriterIdxBackward(size_t len);
 
   /// @brief Return a string.
@@ -163,15 +166,15 @@ class Buffer : public NoCopyable {
   /// @brief Read string from buffer and forward the pointer till delim.
   /// @param delim the delimitor
   /// @param found output arg, if delim is found in buffer
-  /// @return 
-  std::string ReadStringAndForwardTill(const char *delim, bool& found);
+  /// @return
+  std::string ReadStringAndForwardTill(const char *delim, bool &found);
 
   /// @brief Consume all bytes in readable.
   /// @return
   std::vector<char> ReadAll();
 
   /// @brief Consume all bytes in readable.
-  /// @return 
+  /// @return
   std::string ReadAllAsString();
 
   /// @brief Read a long integer from buffer and forward the pointer.
@@ -203,18 +206,19 @@ class Buffer : public NoCopyable {
   /// @brief Remove '\t', '\n', '\r', ' ' on both side.
   void TrimLeftRight();
 
- private:
   /// @brief Make sure there is enough room.
   /// @param n
   void EnsureBytesForWrite(size_t n);
 
+ private:
   /// @brief Move readable bytes to the head of buffer.
   void MoveReadableToHead();
 
  private:
-  std::vector<char> data_;
-  size_t p_reader_ = 0ul;
-  size_t p_writer_ = 0ul;
+  char* data_ = nullptr;
+  size_t p_reader_ = 0;
+  size_t p_writer_ = 0;
+  size_t capacity_ = 0;
 };
 
 }  // namespace ahrimq

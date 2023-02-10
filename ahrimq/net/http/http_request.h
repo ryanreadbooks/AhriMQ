@@ -24,7 +24,7 @@ class HTTPRequest {
  public:
   explicit HTTPRequest(Buffer* rbuf);
 
-  ~HTTPRequest() = default;
+  ~HTTPRequest();
 
   std::string GetMethod() {
     return httpMethodStringMapping[method_];

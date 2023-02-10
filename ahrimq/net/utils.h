@@ -15,6 +15,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "buffer/buffer.h"
+
 namespace ahrimq {
 
 constexpr static int OK = 0;
@@ -30,6 +32,8 @@ size_t FixedSizeReadToBuf(int fd, char *buf, size_t len);
 size_t FixedSizeReadToBuf(int fd, char *buf, size_t len, int *flag);
 
 size_t FixedSizeWriteFromBuf(int fd, const char *buf, size_t len);
+
+size_t ReadToBuffer(int fd, Buffer& buffer, int* flag);
 
 size_t SendFile(int infd, int outfd, size_t offset, size_t len);
 

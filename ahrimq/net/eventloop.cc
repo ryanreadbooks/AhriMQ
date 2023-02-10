@@ -2,7 +2,7 @@
 
 namespace ahrimq {
 
-EventLoop::EventLoop() : epoller(new (std::nothrow) Epoller(1024)), stopped(false) {
+EventLoop::EventLoop() : epoller(new (std::nothrow) Epoller(4096)), stopped(false) {
   if (epoller == nullptr) {
     std::cerr << "can not initialize epoller in event loop, program abort.\n";
     exit(EXIT_FAILURE);

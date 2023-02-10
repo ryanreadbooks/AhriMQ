@@ -43,7 +43,7 @@ class Reactor : public NoCopyable {
 
   /// @brief Close given connection.
   /// @param conn
-  void CloseConn(ReactorConn* conn);
+  void CloseConnGuarded(ReactorConn* conn);
 
   uint32_t NumLoops() const {
     return num_loop_;
@@ -78,7 +78,7 @@ class Reactor : public NoCopyable {
 
   void SendFileAndUpdate(ReactorConn* conn, int outfd);
 
-  void InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf);
+  bool InvokeWriteDoneHandler(ReactorConn* conn, Buffer* wbuf);
 
   void Writer(ReactorConn* conn, bool& closed);
 

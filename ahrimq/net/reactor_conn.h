@@ -115,7 +115,7 @@ class ReactorConn : public NoCopyable {
     int fd_ready_ = -1;
     size_t offset_ = 0;
     size_t target_size_ = 0;
-    bool close_after_ = false;
+    bool close_after_ = false;  // close file descriptor after sending it
     size_t filesize_ = 0;
   } file_state_;
 };

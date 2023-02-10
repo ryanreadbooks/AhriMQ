@@ -139,7 +139,7 @@ void HTTPServer::OnStreamOpen(ReactorConn* conn, bool& close_after) {
   conn->SetReadBuffer(&httpconn->read_buf_);
   conn->SetWriteBuffer(&httpconn->write_buf_);
 #ifdef AHRIMQ_DEBUG
-  printf("HTTP connection %s opened\n", conn_name.c_str());
+  // printf("HTTP connection %s opened\n", conn_name.c_str());
 #endif
 }
 
@@ -192,7 +192,7 @@ void HTTPServer::OnStreamClosed(ReactorConn* conn, bool& close_after) {
   httpconns_.erase(conn_name);
   mtx_.unlock();
 #ifdef AHRIMQ_DEBUG
-  printf("HTTP connection %s closed!\n", conn_name.c_str());
+  // printf("HTTP connection %s closed!\n", conn_name.c_str());
 #endif
 }
 
@@ -217,7 +217,7 @@ void HTTPServer::OnStreamWritten(ReactorConn* conn, bool& close_after) {
     httpconn->CurrentResponseRef()->Reset();
   }
 #ifdef AHRIMQ_DEBUG
-  printf("HTTPServer::OnStreamWritten, Request and Response reset\n");
+  // printf("HTTPServer::OnStreamWritten, Request and Response reset\n");
 #endif
 }
 

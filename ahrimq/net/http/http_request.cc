@@ -13,9 +13,13 @@ void HTTPRequest::Reset() {
   method_ = HTTPMethod::Get;
   version_ = VersionNotSupported;
   url_.Reset();
-  body_ = nullptr;
+  body_->Reset();
   form_.Clear();
   cookies_.clear();
+}
+
+HTTPRequest::~HTTPRequest() {
+  body_ = nullptr;
 }
 
 int HTTPRequest::ParseForm() {

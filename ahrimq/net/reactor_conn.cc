@@ -19,6 +19,7 @@ ReactorConn::~ReactorConn() {
   if (loop_ != nullptr && loop_->epoller != nullptr) {
     loop_->epoller->DetachConn(this);
   }
+  fd_ = -1;
 }
 
 bool ReactorConn::PutFile(int fd, bool closeafter) {
